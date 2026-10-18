@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import type { GoalView } from "@/lib/goal-view";
 import { type GoalActivity } from "@/lib/goal-activities";
 import { useLanguage } from "@/components/language-provider";
 import GoalDiagramCanvas from "./goal-diagram-canvas";
@@ -9,10 +18,17 @@ import {
   GoalDiagramZoomControls,
 } from "./goal-diagram-controls";
 import { type DiagramNode } from "./goal-diagram-node";
+import GoalContextMenu, { type DiagramContext } from "./goal-context-menu";
 
 export { ActivityStatus } from "./activity-status";
 
 export default function GoalDiagram({
+  view,
+  onViewChange,
+  onScroll,
+  onEditGoal,
+  onDeleteGoal,
+  onDeleteBranch,
   activities,
   collapsed,
   onToggle,
@@ -23,6 +39,12 @@ export default function GoalDiagram({
   onCollapseAll,
   onExpandAll,
 }: {
+  view: GoalView;
+  onViewChange: Dispatch<SetStateAction<GoalView>>;
+  onScroll: (left: number, top: number) => void;
+  onEditGoal: () => void;
+  onDeleteGoal: () => void;
+  onDeleteBranch: (id: string) => void;
   activities: GoalActivity[];
   collapsed: Set<string>;
   onToggle: (id: string) => void;
@@ -35,11 +57,22 @@ export default function GoalDiagram({
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const { t, language } = useLanguage();
-  const [zoom, setZoom] = useState(1);
+  const zoom = view.zoom;
+  const setZoom = useCallback<Dispatch<SetStateAction<number>>>(
+    (value) => {
+      onViewChange((previous) => ({
+        ...previous,
+        zoom: typeof value === "function" ? value(previous.zoom) : value,
+      }));
+    },
+    [onViewChange],
+  );
+  const initialScroll = useRef({ left: view.scrollLeft, top: view.scrollTop });
   const zoomId = useId();
   const [creating, setCreating] = useState<string | null>(null);
   const createTrigger = useRef<HTMLButtonElement | null>(null);
   const settingsId = useId();
+  const [context, setContext] = useState<DiagramContext | null>(null);
   const nodes: DiagramNode[] = [];
   let cursor = 136;
 
@@ -92,6 +125,13 @@ export default function GoalDiagram({
   const height = Math.max(420, cursor + 12);
 
   useEffect(() => {
+    const frame = requestAnimationFrame(() =>
+      viewport.current?.scrollTo(initialScroll.current),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     const element = viewport.current;
     if (!element) return;
     function wheel(event: WheelEvent) {
@@ -103,7 +143,7 @@ export default function GoalDiagram({
     }
     element.addEventListener("wheel", wheel, { passive: false });
     return () => element.removeEventListener("wheel", wheel);
-  }, []);
+  }, [setZoom]);
 
   function reset() {
     setZoom(1);
@@ -146,11 +186,6 @@ export default function GoalDiagram({
             ? `Add goal to ${parent ? name : "goal"}`
             : `Añadir meta a ${name}`
         }
-        title={
-          language === "en"
-            ? `Add goal to ${parent ? name : "goal"}`
-            : `Añadir meta a ${name}`
-        }
         aria-expanded={creating === parent}
         onClick={(event) => {
           createTrigger.current = event.currentTarget;
@@ -169,14 +204,60 @@ export default function GoalDiagram({
   }
 
   return (
-    <div className="goal-canvas-wrapper">
+    <div
+      className="goal-canvas-wrapper"
+      onContextMenu={(event) => {
+        const target = event.target as Element;
+        if (
+          target.closest(
+            "input, textarea, [contenteditable], .goal-context-menu, [popover]:popover-open",
+          )
+        )
+          return;
+        event.preventDefault();
+        const activityId = target
+          .closest("[data-activity-id]")
+          ?.getAttribute("data-activity-id");
+        const activity = nodes.find(
+          (node) => node.activity.id === activityId,
+        )?.activity;
+        const source =
+          activity &&
+          viewport.current?.querySelector<HTMLElement>(
+            `.goal-node-label[data-activity-id="${CSS.escape(activity.id)}"]`,
+          );
+        setContext({
+          x: event.clientX,
+          y: event.clientY,
+          activity,
+          source: source || viewport.current!,
+        });
+      }}
+      onKeyDown={(event) => {
+        if (
+          event.key !== "ContextMenu" &&
+          !(event.shiftKey && event.key === "F10")
+        )
+          return;
+        const target = event.target as HTMLElement;
+        if (target.closest("input, textarea, [contenteditable]")) return;
+        event.preventDefault();
+        const bounds = target.getBoundingClientRect();
+        target.dispatchEvent(
+          new MouseEvent("contextmenu", {
+            bubbles: true,
+            cancelable: true,
+            clientX: bounds.left + 16,
+            clientY: bounds.top + Math.min(bounds.height, 32),
+          }),
+        );
+      }}
+    >
       <div className="goal-create-action">{addButton("", "la meta")}</div>
       <GoalDiagramSettings
         id={settingsId}
-        onReset={reset}
-        onFit={fit}
-        onExpandAll={onExpandAll}
-        onCollapseAll={collapseAll}
+        onEdit={onEditGoal}
+        onDelete={onDeleteGoal}
       />
       <GoalDiagramCanvas
         activities={activities}
@@ -189,6 +270,7 @@ export default function GoalDiagram({
         trunkEnd={trunkEnd}
         gradientId={settingsId}
         viewport={viewport}
+        onScroll={onScroll}
         onToggle={onToggle}
         onSelect={onSelect}
         onCreate={onCreate}
@@ -205,6 +287,27 @@ export default function GoalDiagram({
         onFit={fit}
         onExpandAll={onExpandAll}
         onCollapseAll={collapseAll}
+      />
+      <GoalContextMenu
+        context={context}
+        onClose={() => setContext(null)}
+        onCreate={() => {
+          createTrigger.current =
+            viewport.current?.parentElement?.querySelector<HTMLButtonElement>(
+              ".goal-create-action button",
+            ) ?? null;
+          setCreating("");
+        }}
+        onReset={reset}
+        onFit={fit}
+        onEdit={() => {
+          if (context?.activity) onSelect(context.activity, context.source);
+        }}
+        onDelete={() => {
+          if (!context?.activity) return;
+          setCreating(null);
+          onDeleteBranch(context.activity.id);
+        }}
       />
     </div>
   );

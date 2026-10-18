@@ -7,6 +7,7 @@ import {
 } from "@/lib/goal-activities";
 import BranchFields from "./branch-fields";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import "./branch-details.css";
 
 export default function BranchDetails({
@@ -220,7 +221,7 @@ export default function BranchDetails({
           </g>
         </g>
       </svg>
-      <button
+      <TooltipButton
         ref={pinnedTask}
         hidden
         type="button"
@@ -253,7 +254,7 @@ export default function BranchDetails({
         />
         <span>{activity?.name}</span>
         <i aria-hidden="true" className="bi bi-arrow-return-left" />
-      </button>
+      </TooltipButton>
       <dialog
         ref={dialogRef}
         aria-labelledby="branch-details-title"
@@ -261,7 +262,7 @@ export default function BranchDetails({
       >
         <header className="branch-details-header">
           <span>{t("Detalles de actividad")}</span>
-          <button
+          <TooltipButton
             type="button"
             autoFocus
             aria-label={t("Cerrar detalles de la meta")}
@@ -269,7 +270,7 @@ export default function BranchDetails({
             className="branch-details-close"
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
-          </button>
+          </TooltipButton>
         </header>
         {activity && (
           <BranchFields

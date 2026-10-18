@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import type { Goal } from "@/lib/goals";
@@ -14,15 +15,15 @@ export default function GoalCard({ goal }: { goal: Goal }) {
       <PaintHover block>
         <div className="flex items-center justify-between">
           <GoalSymbol goal={goal} />
-          <button
+          <TooltipButton
             type="button"
             disabled
             aria-label={`${t("Opciones de")} ${goal.name} ${t("(próximamente)")}`}
             title={t("Opciones: próximamente")}
-            className="text-zinc-400"
+            className="relative z-20 text-zinc-400"
           >
             <Icon name="more" className="size-4" />
-          </button>
+          </TooltipButton>
         </div>
         <div>
           <h3 className="text-base font-medium">{goal.name}</h3>

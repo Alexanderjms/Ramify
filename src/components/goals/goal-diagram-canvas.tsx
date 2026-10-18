@@ -19,6 +19,7 @@ export default function GoalDiagramCanvas({
   trunkEnd,
   gradientId,
   viewport,
+  onScroll,
   onToggle,
   onSelect,
   onCreate,
@@ -37,6 +38,7 @@ export default function GoalDiagramCanvas({
   trunkEnd: number;
   gradientId: string;
   viewport: RefObject<HTMLDivElement | null>;
+  onScroll: (left: number, top: number) => void;
   onToggle: (id: string) => void;
   onSelect: (activity: GoalActivity, source: HTMLElement) => void;
   onCreate: (parent: string, name: string) => boolean;
@@ -62,6 +64,9 @@ export default function GoalDiagramCanvas({
       role="region"
       aria-label={t("Diagrama de la meta")}
       tabIndex={0}
+      onScroll={(event) =>
+        onScroll(event.currentTarget.scrollLeft, event.currentTarget.scrollTop)
+      }
       onPointerDown={(event) => {
         if (
           event.button !== 0 ||
@@ -144,6 +149,8 @@ export default function GoalDiagramCanvas({
             {nodes.map((node) => (
               <path
                 key={node.activity.id}
+                data-activity-id={node.activity.id || undefined}
+                pointerEvents="stroke"
                 d={`M${node.parentX} ${node.y - 48} C${node.parentX} ${node.y - 24},${node.x} ${node.y - 24},${node.x} ${node.y}`}
                 stroke={node.activity.color}
                 strokeWidth={node.parentX === 66 ? 5 : 4}
@@ -164,6 +171,8 @@ export default function GoalDiagramCanvas({
                 return (
                   <path
                     key={node.activity.id}
+                    data-activity-id={node.activity.id}
+                    pointerEvents="stroke"
                     d={`M${node.x} ${node.y} V${children.at(-1)!.y - 48}`}
                     stroke={node.activity.color}
                     strokeWidth="4"
@@ -188,6 +197,7 @@ export default function GoalDiagramCanvas({
               <div
                 key={activity.id}
                 className="goal-node-color"
+                data-activity-id={activity.id}
                 style={{ left: x - 14, top: y - 14 }}
               >
                 <BranchColorPicker

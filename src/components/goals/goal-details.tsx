@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMemo, useRef, useState } from "react";
+import type { GoalView } from "@/lib/goal-view";
+import useGoalView from "./use-goal-view";
+import NewGoalModal from "./new-goal-modal";
+import DeleteGoalDialog from "./delete-goal-dialog";
 import {
   flattenActivities,
   colorActivity,
@@ -14,13 +19,39 @@ import BranchDetails from "./branch-details";
 import { useLanguage } from "@/components/language-provider";
 import "./goal-details.css";
 
-export default function GoalDetails({ id }: { id: string }) {
-  const { goals, updateActivities } = useGoals();
+export default function GoalDetails({
+  id,
+  initialView,
+}: {
+  id: string;
+  initialView: GoalView;
+}) {
+  const { goals, updateActivities, updateGoal, deleteGoal, deleteBranch } =
+    useGoals();
+  const router = useRouter();
+  const editDialog = useRef<HTMLDialogElement>(null);
+  const deleteDialog = useRef<HTMLDialogElement>(null);
+  const deleteBranchDialog = useRef<HTMLDialogElement>(null);
+  const [deletingBranchId, setDeletingBranchId] = useState<string | null>(null);
   const { t } = useLanguage();
   const goal = goals.find((goal) => goal.id === id);
-  const [collapsed, setCollapsed] = useState<Set<string>>(
-    new Set(["modulo-1"]),
+  const { view, setView, updateScroll, saveError, retrySave } = useGoalView(
+    id,
+    initialView,
   );
+  const collapsed = useMemo(() => new Set(view.collapsed), [view.collapsed]);
+  function setCollapsed(
+    value: Set<string> | ((previous: Set<string>) => Set<string>),
+  ) {
+    setView((previous) => ({
+      ...previous,
+      collapsed: [
+        ...(typeof value === "function"
+          ? value(new Set(previous.collapsed))
+          : value),
+      ],
+    }));
+  }
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<HTMLElement | null>(
@@ -115,12 +146,29 @@ export default function GoalDetails({ id }: { id: string }) {
 
   return (
     <div className="goal-detail">
+      {saveError && (
+        <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
+          {t("No se pudo guardar la vista en Turso.")}{" "}
+          <button type="button" onClick={retrySave} className="underline">
+            {t("Reintentar")}
+          </button>
+        </p>
+      )}
       {error && (
         <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
           {t(error)}
         </p>
       )}
       <GoalDiagram
+        onDeleteBranch={(activityId) => {
+          setDeletingBranchId(activityId);
+          deleteBranchDialog.current?.showModal();
+        }}
+        onEditGoal={() => editDialog.current?.showModal()}
+        onDeleteGoal={() => deleteDialog.current?.showModal()}
+        view={view}
+        onViewChange={setView}
+        onScroll={updateScroll}
         onColor={(activityId, color) =>
           save((current) =>
             mapActivities(current, activityId, (item) =>
@@ -164,6 +212,42 @@ export default function GoalDetails({ id }: { id: string }) {
             }),
           )
         }
+      />
+      <NewGoalModal
+        dialogRef={editDialog}
+        initialGoal={goal}
+        onCreate={(changes) => updateGoal(id, changes)}
+      />
+      <DeleteGoalDialog
+        dialogRef={deleteDialog}
+        name={goal.name}
+        onDelete={() => {
+          deleteGoal(id);
+          router.replace("/metas");
+        }}
+      />
+      <DeleteGoalDialog
+        branch
+        dialogRef={deleteBranchDialog}
+        name={
+          all.find((activity) => activity.id === deletingBranchId)?.name ?? ""
+        }
+        onDelete={() => {
+          if (!deletingBranchId) throw new Error("Branch not found");
+          const removed = new Set(deleteBranch(id, deletingBranchId));
+          setCollapsed(
+            (previous) =>
+              new Set(
+                [...previous].filter((activityId) => !removed.has(activityId)),
+              ),
+          );
+          if (selectedId && removed.has(selectedId)) {
+            detailsDialog.current?.close();
+            setSelectedId(null);
+            setSelectedSource(null);
+          }
+          setDeletingBranchId(null);
+        }}
       />
     </div>
   );

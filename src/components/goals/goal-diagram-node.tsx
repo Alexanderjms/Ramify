@@ -6,6 +6,7 @@ import {
 } from "react";
 import { type GoalActivity } from "@/lib/goal-activities";
 import { ActivityStatus } from "./activity-status";
+import Tooltip, { TooltipButton } from "@/components/tooltip";
 
 export type DiagramNode = {
   activity: GoalActivity;
@@ -65,6 +66,7 @@ export default function GoalDiagramNode({
   return (
     <div
       className="goal-node-label"
+      data-activity-id={activity.id || undefined}
       data-reordering={reordering?.id === activity.id || undefined}
       data-drop-position={
         reordering?.target === activity.id && reordering.id !== activity.id
@@ -125,21 +127,21 @@ export default function GoalDiagramNode({
               )
             }
           />
-          <button
+          <TooltipButton
             type="submit"
             aria-label={t("Guardar meta")}
             title={t("Guardar (Enter)")}
           >
             <i aria-hidden="true" className="bi bi-check-lg" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             aria-label={t("Cancelar meta")}
             title={t("Cancelar (Escape)")}
             onClick={onCloseEditor}
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
-          </button>
+          </TooltipButton>
         </form>
       ) : (
         <>
@@ -173,18 +175,22 @@ export default function GoalDiagramNode({
             </button>
           )}
           {activity.status !== "pending" && (
-            <span
-              className="goal-status-indicator"
-              role="img"
-              aria-label={t(
-                activity.status === "completed" ? "Completada" : "En proceso",
-              )}
-              title={t(
+            <Tooltip
+              content={t(
                 activity.status === "completed" ? "Completada" : "En proceso",
               )}
             >
-              <ActivityStatus status={activity.status} />
-            </span>
+              <span
+                className="goal-status-indicator"
+                role="img"
+                aria-label={t(
+                  activity.status === "completed" ? "Completada" : "En proceso",
+                )}
+                tabIndex={0}
+              >
+                <ActivityStatus status={activity.status} />
+              </span>
+            </Tooltip>
           )}
           {addButton(activity.id, activity.name)}
           {total > 1 && (
@@ -192,9 +198,6 @@ export default function GoalDiagramNode({
               type="button"
               className="goal-reorder"
               aria-label={`${language === "en" ? "Reorder goal" : "Reordenar meta"} ${activity.name}`}
-              title={t(
-                "Arrastra para ordenar. Con teclado: flechas arriba y abajo.",
-              )}
               aria-pressed={reordering?.id === activity.id}
               onKeyDown={(event) => {
                 if (event.key === "Escape") {

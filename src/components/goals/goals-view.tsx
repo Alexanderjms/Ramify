@@ -12,6 +12,7 @@ import type { Goal } from "@/lib/goals";
 import EmptyGoals from "./empty-goals";
 import { useGoals } from "./goals-provider";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 
 const statuses = [
   "Todas",
@@ -117,7 +118,7 @@ export default function GoalsView() {
           className="flex items-center gap-1 rounded border border-zinc-800 p-1"
         >
           {(["grid", "list"] as const).map((mode) => (
-            <button
+            <TooltipButton
               key={mode}
               type="button"
               aria-label={t(
@@ -130,7 +131,7 @@ export default function GoalsView() {
               <PaintHover>
                 <Icon name={mode} className="size-[15px]" />
               </PaintHover>
-            </button>
+            </TooltipButton>
           ))}
         </div>
       </div>

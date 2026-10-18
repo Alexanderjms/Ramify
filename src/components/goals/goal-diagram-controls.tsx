@@ -1,76 +1,56 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 
 export function GoalDiagramSettings({
   id,
-  onReset,
-  onFit,
-  onExpandAll,
-  onCollapseAll,
+  onEdit,
+  onDelete,
 }: {
   id: string;
-  onReset: () => void;
-  onFit: () => void;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   const { t } = useLanguage();
 
   return (
     <>
-      <button
+      <TooltipButton
         type="button"
         className="goal-settings-button"
-        aria-label={t("Configuración de la vista")}
-        title={t("Configuración de la vista")}
+        aria-label={t("Ajustes de la meta")}
+        title={t("Ajustes de la meta")}
         popoverTarget={id}
       >
         <i aria-hidden="true" className="bi bi-sliders2" />
-      </button>
+      </TooltipButton>
       <div
         id={id}
         popover="auto"
         className="goal-settings-menu"
-        aria-label={t("Configuración de la vista")}
+        aria-label={t("Ajustes de la meta")}
       >
         <h2 className="px-3 py-2 text-[11px] font-medium text-zinc-400">
-          {t("Configuración de la vista")}
+          {t("Ajustes de la meta")}
         </h2>
         <button
           type="button"
           popoverTarget={id}
           popoverTargetAction="hide"
-          onClick={onReset}
+          onClick={onEdit}
         >
-          <i aria-hidden="true" className="bi bi-crosshair" />
-          {t("Centrar lienzo")}
+          <i aria-hidden="true" className="bi bi-pencil" />
+          {t("Editar meta")}
         </button>
         <button
           type="button"
           popoverTarget={id}
           popoverTargetAction="hide"
-          onClick={onFit}
+          onClick={onDelete}
+          className="goal-delete-action"
         >
-          <i aria-hidden="true" className="bi bi-fullscreen" />
-          {t("Ajustar a pantalla")}
-        </button>
-        <button
-          type="button"
-          popoverTarget={id}
-          popoverTargetAction="hide"
-          onClick={onExpandAll}
-        >
-          <i aria-hidden="true" className="bi bi-arrows-expand" />
-          {t("Expandir todas las metas")}
-        </button>
-        <button
-          type="button"
-          popoverTarget={id}
-          popoverTargetAction="hide"
-          onClick={onCollapseAll}
-        >
-          <i aria-hidden="true" className="bi bi-arrows-collapse" />
-          {t("Contraer todas las metas")}
+          <i aria-hidden="true" className="bi bi-trash3" />
+          {t("Eliminar meta")}
         </button>
       </div>
     </>
@@ -106,14 +86,14 @@ export function GoalDiagramZoomControls({
         role="group"
         aria-label={t("Herramientas del lienzo")}
       >
-        <button
+        <TooltipButton
           aria-label={t("Alejar")}
           disabled={zoom <= 0.35}
           onClick={() => setZoom((value) => Math.max(0.35, value - 0.1))}
         >
           <i aria-hidden="true" className="bi bi-dash-lg" />
-        </button>
-        <button
+        </TooltipButton>
+        <TooltipButton
           ref={trigger}
           aria-label={t("Cambiar porcentaje de zoom")}
           aria-haspopup="dialog"
@@ -121,26 +101,26 @@ export function GoalDiagramZoomControls({
           className="min-w-12 text-white"
         >
           {Math.round(zoom * 100)}%
-        </button>
-        <button
+        </TooltipButton>
+        <TooltipButton
           aria-label={t("Acercar")}
           disabled={zoom >= 2}
           onClick={() => setZoom((value) => Math.min(2, value + 0.1))}
         >
           <i aria-hidden="true" className="bi bi-plus-lg" />
-        </button>
-        <button aria-label={t("Centrar")} onClick={onReset}>
+        </TooltipButton>
+        <TooltipButton aria-label={t("Centrar")} onClick={onReset}>
           <i aria-hidden="true" className="bi bi-crosshair" />
-        </button>
-        <button aria-label={t("Ajustar a pantalla")} onClick={onFit}>
+        </TooltipButton>
+        <TooltipButton aria-label={t("Ajustar a pantalla")} onClick={onFit}>
           <i aria-hidden="true" className="bi bi-fullscreen" />
-        </button>
-        <button aria-label={t("Expandir metas")} onClick={onExpandAll}>
+        </TooltipButton>
+        <TooltipButton aria-label={t("Expandir metas")} onClick={onExpandAll}>
           <i aria-hidden="true" className="bi bi-arrows-expand" />
-        </button>
-        <button aria-label={t("Contraer metas")} onClick={onCollapseAll}>
+        </TooltipButton>
+        <TooltipButton aria-label={t("Contraer metas")} onClick={onCollapseAll}>
           <i aria-hidden="true" className="bi bi-arrows-collapse" />
-        </button>
+        </TooltipButton>
       </div>
       <div
         ref={popover}
@@ -205,13 +185,13 @@ export function GoalDiagramZoomControls({
               aria-describedby={`${id}-hint`}
             />
             <span>%</span>
-            <button
+            <TooltipButton
               type="submit"
               aria-label={t("Aplicar zoom")}
               title={t("Aplicar (Enter)")}
             >
               <i aria-hidden="true" className="bi bi-check-lg" />
-            </button>
+            </TooltipButton>
           </div>
           <p id={`${id}-hint`}>{t("Entre 35 % y 200 %")}</p>
         </form>

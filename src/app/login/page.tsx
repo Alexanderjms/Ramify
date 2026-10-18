@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { auth, signIn, signOut } from "@/auth";
+import { connection } from "next/server";
+import { auth, signIn } from "@/auth";
 import GradientASCII from "@/components/GradientASCII";
 import LoginCard from "@/components/login/login-card";
 
@@ -25,13 +26,17 @@ export default function Login(props: PageProps<"/login">) {
 }
 
 async function LoginContent({ searchParams }: PageProps<"/login">) {
+  await connection();
   const { error } = await searchParams;
   const configured = Boolean(
     process.env.AUTH_GITHUB_ID &&
     process.env.AUTH_GITHUB_SECRET &&
-    process.env.AUTH_SECRET,
+    process.env.AUTH_SECRET &&
+    process.env.TURSO_DATABASE_URL &&
+    process.env.TURSO_AUTH_TOKEN,
   );
   const session = configured ? await auth() : null;
+  if (session?.user?.id) redirect("/dashboard");
 
   return (
     <main className="relative isolate flex min-h-svh flex-col overflow-hidden bg-[#050609] text-white">
@@ -48,12 +53,8 @@ async function LoginContent({ searchParams }: PageProps<"/login">) {
           error={error}
           action={async () => {
             "use server";
-            if (session) {
-              await signOut({ redirectTo: "/login" });
-              return;
-            }
             if (!configured) redirect("/login?error=configuration");
-            await signIn("github", { redirectTo: "/login" });
+            await signIn("github", { redirectTo: "/dashboard" });
           }}
         />
       </section>

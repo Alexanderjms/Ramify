@@ -1,5 +1,6 @@
 import type { KeyboardEvent, RefObject } from "react";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 
 export type BranchTextFieldName = "description" | "notes";
 
@@ -58,7 +59,7 @@ export default function BranchTextField({
             onUpdate(field, event.currentTarget.value);
         }}
       />
-      <button
+      <TooltipButton
         id={`${id}-edit`}
         type="button"
         className="branch-edit-button"
@@ -83,7 +84,7 @@ export default function BranchTextField({
             {t(description ? "Escribe una descripción" : "Escribe una nota")}
           </span>
         )}
-      </button>
+      </TooltipButton>
     </div>
   );
 }

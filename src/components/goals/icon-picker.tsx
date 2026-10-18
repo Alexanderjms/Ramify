@@ -6,6 +6,7 @@ import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import GoalSymbol from "./goal-symbol";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import IconColorPalette from "./icon-color-palette";
 import IconSearch from "./icon-search";
 import { GOAL_COLORS_PER_PAGE, goalColors } from "./goal-colors";
@@ -138,7 +139,7 @@ export default function IconPicker({
           >
             {t("Icono y color")}
           </h2>
-          <button
+          <TooltipButton
             type="button"
             aria-label={t("Cerrar selector de iconos")}
             onClick={() => dialog.current?.close()}
@@ -150,7 +151,7 @@ export default function IconPicker({
                 className="bi bi-x-lg text-sm leading-none"
               />
             </PaintHover>
-          </button>
+          </TooltipButton>
         </div>
         <IconColorPalette
           color={color}

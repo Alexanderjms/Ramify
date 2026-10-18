@@ -13,6 +13,7 @@ import {
 } from "@/lib/goal-activities";
 import { ActivityStatus } from "./goal-diagram";
 import Select from "@/components/select";
+import JellyRadio from "@/components/JellyRadio";
 import DatePicker from "@/components/date-picker";
 import BranchColorPicker from "./branch-color-picker";
 import { useLanguage } from "@/components/language-provider";
@@ -33,6 +34,7 @@ export default function BranchFields({
   const [addingTask, setAddingTask] = useState(false);
   const [readingFile, setReadingFile] = useState(false);
   const [error, setError] = useState("");
+  const [editingName, setEditingName] = useState(false);
   const [editing, setEditing] = useState<"description" | "notes" | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const previous = useRef<{
@@ -178,7 +180,62 @@ export default function BranchFields({
           />
         </div>
         <h2 id="branch-details-title">{activity.name}</h2>
+        <button
+          type="button"
+          className="branch-edit-name"
+          aria-label={t("Editar nombre")}
+          aria-expanded={editingName}
+          onClick={() => setEditingName((value) => !value)}
+        >
+          <i aria-hidden="true" className="bi bi-pencil" />
+        </button>
       </div>
+      {editingName && (
+        <form
+          className="branch-name-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const input = event.currentTarget.elements.namedItem(
+              "name",
+            ) as HTMLInputElement;
+            const name = input.value.trim();
+            if (!name) {
+              input.setCustomValidity(t("Escribe el nombre de la meta."));
+              input.reportValidity();
+              return;
+            }
+            if (name && name.length <= 100 && update({ name }))
+              setEditingName(false);
+          }}
+        >
+          <input
+            name="name"
+            aria-label={t("Nombre de la meta")}
+            defaultValue={activity.name}
+            required
+            onInput={(event) => event.currentTarget.setCustomValidity("")}
+            maxLength={100}
+            autoFocus
+            onFocus={(event) => event.currentTarget.select()}
+            onKeyDown={(event) => {
+              if (event.key !== "Escape") return;
+              event.preventDefault();
+              event.stopPropagation();
+              setEditingName(false);
+            }}
+          />
+          <button type="submit" aria-label={t("Guardar cambios")}>
+            <i aria-hidden="true" className="bi bi-check-lg" />
+          </button>
+          <button
+            type="button"
+            aria-label={t("Cancelar")}
+            onClick={() => setEditingName(false)}
+          >
+            <i aria-hidden="true" className="bi bi-x-lg" />
+          </button>
+        </form>
+      )}
       <BranchTextField
         field="description"
         id={`${fieldId}-description`}
@@ -226,33 +283,53 @@ export default function BranchFields({
         <div>
           <dt>{t("Prioridad")}</dt>
           <dd data-field="priority">
-            <Select
-              label="Prioridad"
+            <JellyRadio
+              ariaLabel={t("Prioridad")}
               value={activity.priority ?? "medium"}
-              options={[
+              size="sm"
+              gap={4}
+              swell={0.12}
+              barge={3}
+              items={[
                 {
                   value: "low",
-                  label: "Baja",
-                  icon: <i aria-hidden="true" className="bi bi-reception-1" />,
+                  label: t("Baja"),
+                  icon: (
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full bg-blue-500"
+                    />
+                  ),
                 },
                 {
                   value: "medium",
-                  label: "Media",
-                  icon: <i aria-hidden="true" className="bi bi-reception-2" />,
+                  label: t("Media"),
+                  icon: (
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full bg-orange-500"
+                    />
+                  ),
                 },
                 {
                   value: "high",
-                  label: "Alta",
-                  icon: <i aria-hidden="true" className="bi bi-reception-3" />,
+                  label: t("Alta"),
+                  icon: (
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full bg-green-500"
+                    />
+                  ),
                 },
               ]}
-              icon={
-                <i
-                  aria-hidden="true"
-                  className={`bi bi-reception-${activity.priority === "low" ? 1 : activity.priority === "high" ? 3 : 2}`}
-                />
-              }
-              onChange={(priority) => update({ priority })}
+              onChange={(priority) => {
+                if (
+                  priority === "low" ||
+                  priority === "medium" ||
+                  priority === "high"
+                )
+                  update({ priority });
+              }}
             />
           </dd>
         </div>

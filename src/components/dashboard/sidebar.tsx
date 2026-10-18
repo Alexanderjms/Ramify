@@ -62,7 +62,7 @@ export default function Sidebar({
         <Link
           href="/dashboard"
           aria-current={page === "Dashboard" ? "page" : undefined}
-          title="Dashboard"
+          aria-label="Dashboard"
           className={`paint-hover flex items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] ${page === "Dashboard" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
         >
           <PaintHover>
@@ -73,7 +73,7 @@ export default function Sidebar({
         <Link
           href="/metas"
           aria-current={page === "Metas" && !goalId ? "page" : undefined}
-          title={t("Metas")}
+          aria-label={t("Metas")}
           className={`paint-hover flex items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] ${!collapsed ? "md:hidden" : ""} ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
         >
           <PaintHover>
@@ -116,7 +116,7 @@ export default function Sidebar({
                   key={goal.id}
                   href={`/metas/${goal.id}`}
                   aria-current={goal.id === goalId ? "page" : undefined}
-                  title={goal.name}
+                  aria-label={goal.name}
                   className={`paint-hover flex min-w-0 items-center gap-2 rounded px-2 py-2 text-xs ${goal.id === goalId ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
                 >
                   <PaintHover>

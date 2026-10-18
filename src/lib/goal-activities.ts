@@ -29,6 +29,19 @@ export type GoalActivity = {
 export type GoalActivityChanges =
   Partial<GoalActivity> | ((current: GoalActivity) => Partial<GoalActivity>);
 
+export function removeActivity(
+  activities: GoalActivity[],
+  id: string,
+): GoalActivity[] {
+  return activities
+    .filter((activity) => activity.id !== id)
+    .map((activity) =>
+      activity.children
+        ? { ...activity, children: removeActivity(activity.children, id) }
+        : activity,
+    );
+}
+
 export function colorActivity(
   activity: GoalActivity,
   color: string,

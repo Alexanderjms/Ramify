@@ -1,4 +1,5 @@
 "use client";
+import { TooltipButton } from "@/components/tooltip";
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import Select from "./select";
@@ -186,22 +187,22 @@ export default function DatePicker({
             onChange={(value) => changeMonth(Number(value), month.getMonth())}
           />
           <div className="calendar-navigation">
-            <button
+            <TooltipButton
               type="button"
               aria-label={t("Mes anterior")}
               disabled={year === 1 && month.getMonth() === 0}
               onClick={() => changeMonth(year, month.getMonth() - 1)}
             >
               <i aria-hidden="true" className="bi bi-chevron-left" />
-            </button>
-            <button
+            </TooltipButton>
+            <TooltipButton
               type="button"
               aria-label={t("Mes siguiente")}
               disabled={year === 9999 && month.getMonth() === 11}
               onClick={() => changeMonth(year, month.getMonth() + 1)}
             >
               <i aria-hidden="true" className="bi bi-chevron-right" />
-            </button>
+            </TooltipButton>
           </div>
         </div>
         <p className="sr-only" aria-live="polite">

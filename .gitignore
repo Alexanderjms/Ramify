@@ -8,6 +8,8 @@ node_modules/
 !.yarn/versions
 /coverage
 *.mjs
+!/scripts/check-priority.mjs
+!/scripts/check-tooltips.mjs
 .next/
 /out/
 /build
@@ -21,3 +23,6 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+/docs/
+/db/migrations/
+/scripts/**/*.cjs

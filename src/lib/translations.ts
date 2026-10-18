@@ -1,4 +1,25 @@
 export const english: Record<string, string> = {
+  "Opciones de la rama": "Branch options",
+  "Opciones del diagrama": "Diagram options",
+  Editar: "Edit",
+  Eliminar: "Delete",
+  "Editar nombre": "Edit name",
+  "Eliminar rama": "Delete branch",
+  "Se eliminarán esta rama y sus descendientes, subtareas y recursos. Esta acción no se puede deshacer.":
+    "This branch and its descendants, subtasks and resources will be deleted. This action cannot be undone.",
+  "No se pudo eliminar la rama. Inténtalo de nuevo.":
+    "Could not delete the branch. Please try again.",
+  "Ajustes de la meta": "Goal settings",
+  "Editar meta": "Edit goal",
+  "Guardar cambios": "Save changes",
+  "Actualiza los detalles de tu meta.": "Update your goal details.",
+  "Eliminar meta": "Delete goal",
+  "Se eliminarán esta meta y todas sus ramas, subtareas y recursos. Esta acción no se puede deshacer.":
+    "This goal and all its branches, subtasks and resources will be deleted. This action cannot be undone.",
+  "No se pudo eliminar la meta. Inténtalo de nuevo.":
+    "Could not delete the goal. Please try again.",
+  "No se pudo guardar la vista en Turso.": "Could not save the view to Turso.",
+  Reintentar: "Retry",
   "Sin actividad": "No activity",
   "Iconos Bootstrap Fill": "Bootstrap Fill icons",
   iconos: "icons",
@@ -250,6 +271,6 @@ export const english: Record<string, string> = {
   "Continuar con GitHub": "Continue with GitHub",
   "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub.":
     "Could not sign in. Please try again with GitHub.",
-  "Completa AUTH_GITHUB_ID, AUTH_GITHUB_SECRET y AUTH_SECRET en .env para activar el acceso.":
-    "Set AUTH_GITHUB_ID, AUTH_GITHUB_SECRET and AUTH_SECRET in .env to enable sign-in.",
+  "Configura las credenciales de GitHub, AUTH_SECRET y la conexión de Turso en .env para activar el acceso.":
+    "Configure GitHub credentials, AUTH_SECRET and the Turso connection in .env to enable sign-in.",
 };

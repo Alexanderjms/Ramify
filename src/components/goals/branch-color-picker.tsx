@@ -3,6 +3,7 @@
 import { useId, useRef } from "react";
 import { goalColors } from "./goal-colors";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import "./branch-color-picker.css";
 
 export default function BranchColorPicker({
@@ -21,7 +22,7 @@ export default function BranchColorPicker({
   const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
-      <button
+      <TooltipButton
         ref={trigger}
         type="button"
         className="branch-color-trigger"
@@ -31,7 +32,7 @@ export default function BranchColorPicker({
         style={{ anchorName: anchor }}
       >
         <span style={{ background: color }} />
-      </button>
+      </TooltipButton>
       <div
         ref={popup}
         id={id}
@@ -52,7 +53,7 @@ export default function BranchColorPicker({
         <h3>{t("Color de la meta")}</h3>
         <div className="branch-color-swatches">
           {goalColors.slice(0, 18).map(([label, value]) => (
-            <button
+            <TooltipButton
               type="button"
               key={value}
               title={t(label)}
@@ -69,7 +70,7 @@ export default function BranchColorPicker({
                   <i aria-hidden="true" className="bi bi-check-lg" />
                 )}
               </span>
-            </button>
+            </TooltipButton>
           ))}
         </div>
         <label className="branch-custom-color">

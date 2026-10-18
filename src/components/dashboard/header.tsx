@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useGoals } from "@/components/goals/goals-provider";
 import GoalSymbol from "@/components/goals/goal-symbol";
 import { useLanguage } from "@/components/language-provider";
+import Tooltip from "@/components/tooltip";
 import ProfileMenu from "@/components/dashboard/profile-menu";
 import "./header.css";
 
@@ -40,13 +41,15 @@ export default function DashboardHeader({
             <span className="flex shrink-0 items-center [&_i]:text-sm [&_svg]:size-3.5">
               <GoalSymbol goal={goal} />
             </span>
-            <h1
-              title={goal.name}
-              className="truncate font-medium"
-              aria-current="page"
-            >
-              {goal.name}
-            </h1>
+            <Tooltip content={goal.name}>
+              <h1
+                tabIndex={0}
+                className="truncate font-medium"
+                aria-current="page"
+              >
+                {goal.name}
+              </h1>
+            </Tooltip>
             <span
               role="progressbar"
               aria-label={t("Progreso de la meta")}

@@ -4,6 +4,7 @@ import bootstrapIcons from "bootstrap-icons/font/bootstrap-icons.json";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 
 const icons = Object.keys(bootstrapIcons)
   .filter((name) => name.endsWith("-fill"))
@@ -52,7 +53,7 @@ export default function IconSearch({
         className="app-scrollbar grid max-h-[min(320px,40svh)] grid-cols-6 gap-1.5 overflow-y-auto overscroll-contain p-1 pr-2 sm:grid-cols-9"
       >
         {results.map((name) => (
-          <button
+          <TooltipButton
             key={name}
             type="button"
             title={name}
@@ -68,7 +69,7 @@ export default function IconSearch({
                 style={{ color }}
               />
             </PaintHover>
-          </button>
+          </TooltipButton>
         ))}
       </div>
       <div className="mt-5 flex items-center justify-between gap-4 border-t border-zinc-800 pt-4">

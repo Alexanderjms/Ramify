@@ -4,6 +4,7 @@ import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import GoalsProvider from "@/components/goals/goals-provider";
 import LanguageProvider from "@/components/language-provider";
+import { WarmTooltipGroup } from "@/components/WarmTooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <LanguageProvider>
-          <GoalsProvider>{children}</GoalsProvider>
+          <WarmTooltipGroup travel={200}>
+            <GoalsProvider>{children}</GoalsProvider>
+          </WarmTooltipGroup>
         </LanguageProvider>
       </body>
     </html>

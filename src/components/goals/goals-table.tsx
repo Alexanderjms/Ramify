@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import type { Goal } from "@/lib/goals";
@@ -95,7 +96,7 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
                 {t(goal.activity)}
               </td>
               <td className="pr-4">
-                <button
+                <TooltipButton
                   type="button"
                   disabled
                   aria-label={`${t("Opciones de")} ${goal.name} ${t("(próximamente)")}`}
@@ -105,7 +106,7 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
                   <PaintHover>
                     <Icon name="more" className="size-4" />
                   </PaintHover>
-                </button>
+                </TooltipButton>
               </td>
             </tr>
           ))}

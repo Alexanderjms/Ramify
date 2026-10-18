@@ -2,6 +2,7 @@ import type { MouseEvent, RefObject } from "react";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import { GOAL_COLORS_PER_PAGE, goalColors } from "./goal-colors";
 
 const colorPages = Math.ceil(goalColors.length / GOAL_COLORS_PER_PAGE);
@@ -27,7 +28,7 @@ export default function IconColorPalette({
       aria-label={t("Color del icono")}
       className="mb-3 flex w-full items-center justify-between gap-1"
     >
-      <button
+      <TooltipButton
         type="button"
         aria-label={t("Colores anteriores")}
         disabled={colorPage === 0}
@@ -37,7 +38,7 @@ export default function IconColorPalette({
         <PaintHover>
           <Icon name="chevron" className="size-3 rotate-180" />
         </PaintHover>
-      </button>
+      </TooltipButton>
       <div
         ref={paletteRef}
         className="color-page flex min-w-0 flex-1 justify-between gap-0.5 sm:gap-1"
@@ -48,7 +49,7 @@ export default function IconColorPalette({
             (colorPage + 1) * GOAL_COLORS_PER_PAGE,
           )
           .map(([label, value]) => (
-            <button
+            <TooltipButton
               key={value}
               type="button"
               aria-label={t(label)}
@@ -68,10 +69,10 @@ export default function IconColorPalette({
                   />
                 )}
               </span>
-            </button>
+            </TooltipButton>
           ))}
       </div>
-      <button
+      <TooltipButton
         type="button"
         aria-label={t("Colores siguientes")}
         disabled={colorPage === colorPages - 1}
@@ -81,7 +82,7 @@ export default function IconColorPalette({
         <PaintHover>
           <Icon name="chevron" className="size-3" />
         </PaintHover>
-      </button>
+      </TooltipButton>
       <span aria-live="polite" className="sr-only">
         Paleta {colorPage + 1} de {colorPages}
       </span>

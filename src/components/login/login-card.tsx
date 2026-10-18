@@ -56,7 +56,7 @@ export default function LoginCard({
         <p role="alert" className="mt-4 text-sm leading-5 text-amber-200">
           {t(
             error === "configuration"
-              ? "Completa AUTH_GITHUB_ID, AUTH_GITHUB_SECRET y AUTH_SECRET en .env para activar el acceso."
+              ? "Configura las credenciales de GitHub, AUTH_SECRET y la conexión de Turso en .env para activar el acceso."
               : "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub.",
           )}
         </p>

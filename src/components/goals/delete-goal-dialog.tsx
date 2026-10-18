@@ -1,0 +1,80 @@
+"use client";
+
+import { useId, useState, type RefObject } from "react";
+import { useLanguage } from "@/components/language-provider";
+import "./new-goal-modal.css";
+
+export default function DeleteGoalDialog({
+  dialogRef,
+  name,
+  onDelete,
+  branch = false,
+}: {
+  dialogRef: RefObject<HTMLDialogElement | null>;
+  name: string;
+  onDelete: () => void;
+  branch?: boolean;
+}) {
+  const { t } = useLanguage();
+  const titleId = useId();
+  const descriptionId = useId();
+  const [error, setError] = useState(false);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      onClose={() => setError(false)}
+      className="new-goal-modal app-scrollbar dashboard-motion fixed m-auto max-h-[calc(100svh-32px)] w-[calc(100%-32px)] max-w-[420px] overflow-y-auto rounded-lg border border-zinc-800 bg-black p-6 text-white [color-scheme:dark] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-white"
+    >
+      <h2 id={titleId} className="text-lg font-semibold">
+        {t(branch ? "Eliminar rama" : "Eliminar meta")}
+      </h2>
+      <p className="mt-3 break-words text-sm font-medium">{name}</p>
+      <p id={descriptionId} className="mt-2 text-xs leading-5 text-zinc-400">
+        {t(
+          branch
+            ? "Se eliminarán esta rama y sus descendientes, subtareas y recursos. Esta acción no se puede deshacer."
+            : "Se eliminarán esta meta y todas sus ramas, subtareas y recursos. Esta acción no se puede deshacer.",
+        )}
+      </p>
+      {error && (
+        <p role="alert" className="mt-3 text-xs leading-5 text-red-400">
+          {t(
+            branch
+              ? "No se pudo eliminar la rama. Inténtalo de nuevo."
+              : "No se pudo eliminar la meta. Inténtalo de nuevo.",
+          )}
+        </p>
+      )}
+      <form
+        className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          try {
+            onDelete();
+            dialogRef.current?.close();
+          } catch {
+            setError(true);
+          }
+        }}
+      >
+        <button
+          type="button"
+          autoFocus
+          onClick={() => dialogRef.current?.close()}
+          className="cursor-pointer rounded border border-zinc-800 px-3 py-2 text-xs hover:bg-zinc-900"
+        >
+          {t("Cancelar")}
+        </button>
+        <button
+          type="submit"
+          className="cursor-pointer rounded border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-500/20"
+        >
+          {t(branch ? "Eliminar rama" : "Eliminar meta")}
+        </button>
+      </form>
+    </dialog>
+  );
+}

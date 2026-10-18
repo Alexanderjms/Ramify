@@ -12,6 +12,7 @@ import {
   saveGoalFile,
 } from "@/lib/goal-files";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import { animateField } from "./branch-field-animations";
 
 export default function BranchResourceField({
@@ -64,7 +65,7 @@ export default function BranchResourceField({
               >
                 {resource.fileName ?? resource.url}
               </a>
-              <button
+              <TooltipButton
                 type="button"
                 aria-label={`${language === "en" ? "Remove resource" : "Eliminar recurso"} ${resource.fileName ?? resource.url}`}
                 onClick={async (event) => {
@@ -92,7 +93,7 @@ export default function BranchResourceField({
                 }}
               >
                 <i aria-hidden="true" className="bi bi-x" />
-              </button>
+              </TooltipButton>
             </li>
           ))}
         </ul>
@@ -135,14 +136,14 @@ export default function BranchResourceField({
             autoFocus
             onInput={(event) => event.currentTarget.setCustomValidity("")}
           />
-          <button
+          <TooltipButton
             type="submit"
             aria-label={t("Guardar recurso")}
             title={t("Guardar recurso")}
           >
             <i aria-hidden="true" className="bi bi-check-lg" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             aria-label={t("Cancelar")}
             title={t("Cancelar")}
@@ -155,19 +156,19 @@ export default function BranchResourceField({
             }}
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
-          </button>
+          </TooltipButton>
         </form>
       ) : (
         <div className="branch-resource-actions">
-          <button
+          <TooltipButton
             type="button"
             className="branch-add-resource"
             disabled={readingFile || (activity.resources?.length ?? 0) >= 50}
             onClick={() => setAddingResource(true)}
           >
             {t("+ Añadir recurso")}
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             className="branch-add-resource"
             title={t(
@@ -178,7 +179,7 @@ export default function BranchResourceField({
           >
             <i aria-hidden="true" className="bi bi-paperclip" />
             {t(readingFile ? "Leyendo…" : "Adjuntar archivo")}
-          </button>
+          </TooltipButton>
         </div>
       )}
       <input

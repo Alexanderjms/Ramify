@@ -6,6 +6,8 @@ import { logout } from "@/app/account-actions";
 import PaintHover from "@/components/paint-hover";
 import Select from "@/components/select";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
+import { useSession } from "next-auth/react";
 
 function LogoutButton() {
   const { pending } = useFormStatus();
@@ -21,35 +23,50 @@ function LogoutButton() {
 
 export default function ProfileMenu() {
   const { language, setLanguage, t } = useLanguage();
+  const { data: session } = useSession();
+  const name =
+    session?.user?.name ||
+    session?.user?.email ||
+    (language === "en" ? "My account" : "Mi cuenta");
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => Array.from(part)[0])
+    .join("")
+    .toUpperCase();
+  const profileLabel = `${language === "en" ? "Profile of" : "Perfil de"} ${name}`;
   const menuId = useId();
   const [error, setError] = useState(false);
 
   return (
     <>
-      <button
+      <TooltipButton
         type="button"
         popoverTarget={menuId}
         aria-haspopup="dialog"
         className="profile-trigger paint-hover flex shrink-0 cursor-pointer items-center gap-2.5 rounded p-1 text-white"
-        aria-label={t("Perfil de Alex")}
-        title="Alex"
+        aria-label={profileLabel}
+        title={name}
       >
         <PaintHover>
           <span className="flex size-[30px] shrink-0 items-center justify-center rounded bg-zinc-900 text-[11px]">
-            AL
+            {initials}
           </span>
-          <span className="hidden text-sm font-medium sm:block">Alex</span>
+          <span className="hidden max-w-36 truncate text-sm font-medium sm:block">
+            {name}
+          </span>
           <i
             aria-hidden="true"
             className="bi bi-chevron-down text-[10px] text-zinc-400"
           />
         </PaintHover>
-      </button>
+      </TooltipButton>
       <div
         id={menuId}
         popover="auto"
         role="dialog"
-        aria-label={t("Perfil de Alex")}
+        aria-label={profileLabel}
         className="profile-popover"
         onToggle={(event) => {
           if (event.newState === "open") {

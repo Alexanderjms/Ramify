@@ -1,6 +1,7 @@
 import { ActivityStatus } from "./goal-diagram";
 import type { GoalActivity, GoalActivityChanges } from "@/lib/goal-activities";
 import { useLanguage } from "@/components/language-provider";
+import { TooltipButton } from "@/components/tooltip";
 import { animateField } from "./branch-field-animations";
 
 export default function BranchSubtaskField({
@@ -44,7 +45,7 @@ export default function BranchSubtaskField({
         <ul className="branch-subtasks">
           {children.map((child) => (
             <li key={child.id} data-task-id={child.id}>
-              <button
+              <TooltipButton
                 type="button"
                 aria-label={
                   language === "en"
@@ -69,7 +70,7 @@ export default function BranchSubtaskField({
               >
                 <ActivityStatus status={child.status} />
                 <span>{child.name}</span>
-              </button>
+              </TooltipButton>
             </li>
           ))}
         </ul>
@@ -119,14 +120,14 @@ export default function BranchSubtaskField({
             autoFocus
             onInput={(event) => event.currentTarget.setCustomValidity("")}
           />
-          <button
+          <TooltipButton
             type="submit"
             aria-label={t("Guardar subtarea")}
             title={t("Guardar (Enter)")}
           >
             <i aria-hidden="true" className="bi bi-check-lg" />
-          </button>
-          <button
+          </TooltipButton>
+          <TooltipButton
             type="button"
             aria-label={t("Cancelar")}
             title={t("Cancelar")}
@@ -139,7 +140,7 @@ export default function BranchSubtaskField({
             }}
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
-          </button>
+          </TooltipButton>
         </form>
       ) : (
         <button

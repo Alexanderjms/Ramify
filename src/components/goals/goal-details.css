@@ -47,6 +47,10 @@
   opacity: 1;
   transform: translateY(0);
 }
+.goal-context-menu {
+  inset: auto;
+  z-index: 5;
+}
 .goal-settings-menu button {
   display: flex;
   align-items: center;
@@ -61,6 +65,10 @@
 .goal-settings-menu button i {
   color: #a1a1aa;
 }
+.goal-settings-menu .goal-delete-action,
+.goal-settings-menu .goal-delete-action i {
+  color: #fca5a5;
+}
 @starting-style {
   .goal-settings-menu:popover-open {
     opacity: 0;
@@ -72,6 +80,10 @@
   .goal-settings-menu button:hover {
     background: #18181b;
     color: white;
+  }
+  .goal-settings-menu .goal-delete-action:hover {
+    background: #291417;
+    color: #fca5a5;
   }
 }
 .goal-canvas {
