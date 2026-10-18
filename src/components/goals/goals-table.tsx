@@ -1,0 +1,110 @@
+import Icon from "@/components/icon";
+import PaintHover from "@/components/paint-hover";
+import type { Goal } from "@/lib/goals";
+import GoalSymbol from "./goal-symbol";
+import Link from "next/link";
+
+export default function GoalsTable({ goals }: { goals: Goal[] }) {
+  return (
+    <div
+      className="app-scrollbar relative w-full overflow-x-auto"
+      role="region"
+      aria-label="Lista de metas"
+      tabIndex={0}
+    >
+      <table
+        className="w-full min-w-[760px] border-collapse text-left text-xs"
+        aria-label="Metas"
+      >
+        <thead className="border-b border-zinc-800 text-[11px] text-zinc-400">
+          <tr>
+            <th scope="col" className="w-[48%] px-4 pb-3 font-normal">
+              Nombre
+            </th>
+            <th scope="col" className="px-4 pb-3 font-normal">
+              Estado
+            </th>
+            <th scope="col" className="px-4 pb-3 font-normal">
+              Progreso
+            </th>
+            <th scope="col" className="px-4 pb-3 font-normal">
+              Tareas
+            </th>
+            <th scope="col" className="whitespace-nowrap px-4 pb-3 font-normal">
+              Última actividad
+            </th>
+            <th scope="col" className="w-10 pb-3">
+              <span className="sr-only">Opciones</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {goals.map((goal) => (
+            <tr
+              key={goal.id ?? goal.name}
+              className="goal-table-row border-b border-zinc-800"
+            >
+              <th scope="row" className="px-4 py-5 font-normal">
+                <div className="flex items-center gap-3">
+                  <GoalSymbol goal={goal} />
+                  <div>
+                    {goal.id ? (
+                      <Link
+                        href={`/metas/${encodeURIComponent(goal.id)}`}
+                        className="text-[13px] font-medium text-white"
+                      >
+                        {goal.name}
+                      </Link>
+                    ) : (
+                      <span className="text-[13px] font-medium text-white">
+                        {goal.name}
+                      </span>
+                    )}
+                    <p className="mt-1 text-[11px] leading-[18px] text-zinc-400">
+                      {goal.description}
+                    </p>
+                  </div>
+                </div>
+              </th>
+              <td className="whitespace-nowrap px-4 py-5">
+                <span className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                  <Icon
+                    name={goal.progress === 100 ? "check" : "circle"}
+                    className="size-3"
+                  />
+                  {goal.progress === 100
+                    ? "Completada"
+                    : goal.progress === 0
+                      ? "Sin comenzar"
+                      : "En progreso"}
+                </span>
+              </td>
+              <td className="whitespace-nowrap px-4 py-5 text-[11px] text-zinc-400">
+                {goal.progress}% completado
+              </td>
+              <td className="whitespace-nowrap px-4 py-5 text-[11px] tabular-nums text-zinc-400">
+                {goal.completedTasks} / {goal.tasks}
+              </td>
+              <td className="whitespace-nowrap px-4 py-5 text-[11px] text-zinc-400">
+                {goal.activity}
+              </td>
+              <td className="pr-4">
+                <button
+                  type="button"
+                  disabled
+                  aria-label={`Opciones de ${goal.name} (próximamente)`}
+                  title="Opciones: próximamente"
+                  className="paint-hover flex rounded p-1 text-zinc-400"
+                >
+                  <PaintHover>
+                    <Icon name="more" className="size-4" />
+                  </PaintHover>
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

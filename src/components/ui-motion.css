@@ -1,0 +1,219 @@
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.goals-results {
+  view-transition-name: goals-view;
+}
+
+.dashboard-sidebar {
+  transition: width 280ms ease;
+}
+
+.sidebar-goals > nav {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    opacity 280ms ease,
+    transform 280ms ease;
+}
+
+.sidebar-goals[open] > nav {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@supports (interpolate-size: allow-keywords) {
+  .sidebar-goals {
+    interpolate-size: allow-keywords;
+  }
+
+  .sidebar-goals::details-content {
+    height: 0;
+    overflow: clip;
+    transition:
+      height 280ms ease,
+      content-visibility 280ms allow-discrete;
+  }
+
+  .sidebar-goals[open]::details-content {
+    height: auto;
+  }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(goals-view) {
+  animation: none;
+}
+
+::view-transition-old(goals-view) {
+  animation: goals-view-out 120ms var(--ease-out) both;
+}
+
+::view-transition-new(goals-view) {
+  animation: goals-view-in 200ms var(--ease-out) both;
+}
+
+@keyframes goals-view-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes goals-view-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-motion :where(button, a, summary) {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.dashboard-motion :where(input, textarea) {
+  transition:
+    outline-color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.dashboard-motion .paint-hover {
+  transition:
+    transform 120ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.dashboard-motion button.paint-hover:enabled:active {
+  transform: scale(0.97);
+}
+
+.dashboard-motion [aria-pressed] {
+  transition:
+    transform 120ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.select-menu {
+  display: none;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  transform-origin: top left;
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 150ms var(--ease-out),
+    display 150ms allow-discrete;
+}
+
+.select-menu[data-open="true"] {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-duration: 200ms;
+}
+
+@starting-style {
+  .select-menu[data-open="true"] {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.select-option {
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.goal-table-row > * {
+  transition: background-color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .goal-table-row:hover > * {
+    background-color: rgb(255 255 255 / 4%);
+  }
+}
+
+.select-check {
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 120ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+
+[aria-selected="true"] > .select-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.select-label {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 150ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+.select-icon {
+  display: flex;
+  transition: transform 160ms var(--ease-out);
+}
+
+[aria-expanded="true"] .select-icon[data-chevron="true"] {
+  transform: rotate(180deg);
+}
+
+.dashboard-motion[data-motion="instant"] *,
+.dashboard-motion[data-motion="instant"] *::before,
+.dashboard-motion[data-motion="instant"] *::after,
+.dashboard-motion[data-motion="instant"] .sidebar-goals::details-content {
+  transition-duration: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(goals-view),
+  ::view-transition-new(goals-view) {
+    animation: none;
+  }
+  .dashboard-motion .paint-hover,
+  .dashboard-sidebar,
+  .sidebar-goals::details-content,
+  .sidebar-goals > nav,
+  .dashboard-motion :where(button, a, summary),
+  .dashboard-motion :where(input, textarea),
+  .dashboard-motion [aria-pressed],
+  .select-menu,
+  .select-option,
+  .goal-table-row > *,
+  .select-check,
+  .select-label,
+  .select-icon {
+    transition-duration: 0ms !important;
+    transform: none !important;
+  }
+}

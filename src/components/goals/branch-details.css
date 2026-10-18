@@ -1,0 +1,438 @@
+.branch-details-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: clip;
+  pointer-events: none;
+}
+.branch-details-connector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0ms linear 250ms;
+}
+.branch-details-layer:has(.branch-details[open]) .branch-details-connector {
+  opacity: 1;
+  transition: opacity 150ms ease;
+}
+.branch-details-connector use {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 250ms ease;
+}
+.branch-details-layer:has(.branch-details[open]) .branch-details-connector use {
+  stroke-dashoffset: 0;
+}
+.branch-cable-halo {
+  opacity: 0.07;
+}
+.branch-pinned-task {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid;
+  border-radius: 6px;
+  background: #09090b;
+  color: #e4e4e7;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px #0008;
+}
+.branch-pinned-task[hidden] {
+  display: none;
+}
+.branch-pinned-task span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.branch-pinned-task i {
+  flex-shrink: 0;
+}
+.branch-pinned-task:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 4px;
+}
+
+.branch-details {
+  position: absolute;
+  pointer-events: auto;
+  inset: 0 0 0 auto;
+  margin: 0;
+  width: min(420px, 100%);
+  max-width: 100%;
+  height: 100svh;
+  max-height: 100svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-left: 1px solid #3f3f46;
+  background: #09090b;
+  color: white;
+  color-scheme: dark;
+  opacity: 0;
+  transform: translateX(100%);
+  transition:
+    transform 250ms var(--ease-out),
+    opacity 250ms var(--ease-out),
+    display 250ms allow-discrete,
+    overlay 250ms allow-discrete;
+}
+
+.branch-details[open] {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.branch-details-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid #27272a;
+  color: #a1a1aa;
+  font-size: 12px;
+}
+.branch-fields {
+  padding: 20px 24px 32px;
+}
+.branch-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.branch-title > span {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.branch-title h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.branch-fields textarea,
+.branch-fields input,
+.branch-fields select {
+  min-width: 0;
+  background: transparent;
+  color: #e4e4e7;
+}
+.branch-fields textarea {
+  width: 100%;
+  resize: vertical;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.branch-fields textarea::placeholder,
+.branch-fields input::placeholder {
+  color: #71717a;
+}
+.branch-edit-field {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 36px;
+}
+.branch-edit-field:focus {
+  outline: none;
+}
+.branch-edit-field textarea[hidden] {
+  display: none;
+}
+.branch-field-text {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #a1a1aa;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.branch-edit-field textarea {
+  padding-right: 46px;
+}
+.branch-edit-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  color: #a1a1aa;
+  font-size: 13px;
+  cursor: pointer;
+}
+.branch-edit-field[data-editing] .branch-edit-button {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+}
+.branch-edit-field:not([data-editing]) .branch-edit-button {
+  width: auto;
+  min-width: 30px;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.branch-description {
+  display: block;
+  field-sizing: content;
+  min-height: 48px;
+  max-height: 280px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  resize: none !important;
+  color: #a1a1aa !important;
+}
+.branch-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+}
+.branch-properties > div {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+}
+.branch-properties dt {
+  color: #a1a1aa;
+}
+.branch-properties dd {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.branch-properties dd > i {
+  color: #a1a1aa;
+}
+.branch-properties .select-menu {
+  left: auto;
+  right: 0;
+  text-align: left;
+}
+.branch-fields section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #27272a;
+}
+.branch-fields h3 {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.branch-fields h3 > span {
+  font-weight: 400;
+  color: #a1a1aa;
+}
+.branch-resources,
+.branch-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.branch-resources li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: #a1a1aa;
+}
+.branch-resources a {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.branch-resources li > i {
+  flex-shrink: 0;
+}
+.branch-resources li > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.branch-add-resource {
+  color: #a1a1aa;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.branch-add-resource:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.branch-notes {
+  display: block;
+  padding: 10px;
+  border: 1px solid #27272a;
+  border-radius: 5px;
+}
+.branch-subtasks li > button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 30px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.branch-add-task,
+.branch-inline-form button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #27272a;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.branch-inline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.branch-inline-form input {
+  width: 100%;
+  border: 1px solid #27272a;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 16px;
+}
+.branch-inline-form > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.branch-empty {
+  color: #71717a;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.branch-field-error {
+  color: #f87171;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.branch-fields :where(button, a) {
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+.branch-fields :is(input, textarea) {
+  border: 2px solid #27272a;
+  border-radius: 0;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.branch-fields :is(input, textarea):focus {
+  border-color: #a78bfa;
+  background-color: #111114;
+}
+.branch-fields :where(select, button, a):focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .branch-fields button:enabled:hover,
+  .branch-fields a:hover {
+    color: white;
+  }
+  .branch-add-task:hover,
+  .branch-inline-form button:hover {
+    background: #18181b;
+    border-color: #52525b;
+  }
+}
+@media (max-width: 600px) {
+  .branch-fields textarea {
+    font-size: 16px;
+  }
+}
+
+@starting-style {
+  .branch-details[open] {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.branch-details-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  color: #a1a1aa;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .branch-details-close:hover {
+    background: #18181b;
+    color: white;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .branch-fields :where(button, a, input, textarea) {
+    transition: none;
+  }
+  .branch-details,
+  .branch-details[open] {
+    transform: none;
+    transition:
+      opacity 150ms var(--ease-out),
+      display 150ms allow-discrete,
+      overlay 150ms allow-discrete !important;
+  }
+  .branch-details-layer .branch-details-connector {
+    transition: opacity 150ms ease;
+  }
+  .branch-details-connector use {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+  @starting-style {
+    .branch-details[open] {
+      opacity: 0;
+      transform: none;
+    }
+  }
+}

@@ -1,0 +1,61 @@
+body:has(.new-goal-modal[open]) {
+  overflow: hidden;
+}
+
+.icon-picker-modal .bi {
+  transition: color 160ms ease;
+}
+
+.new-goal-modal {
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 150ms var(--ease-out),
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+}
+
+.new-goal-modal[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-duration: 200ms;
+}
+
+.new-goal-modal::backdrop {
+  background: rgb(0 0 0 / 72%);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition:
+    opacity 150ms ease,
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+}
+
+.new-goal-modal[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .new-goal-modal[open] {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  .new-goal-modal[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-picker-modal .bi {
+    transition: none;
+  }
+  .new-goal-modal,
+  .color-page,
+  .new-goal-modal[open],
+  .new-goal-modal::backdrop,
+  .new-goal-modal[open]::backdrop {
+    transition: none;
+    transform: none;
+  }
+}

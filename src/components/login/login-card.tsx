@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Session } from "next-auth";
 import Icon from "@/components/icon";
+import "./github-button.css";
 
 export default function LoginCard({
   session,
@@ -32,10 +33,16 @@ export default function LoginCard({
       <form className="mt-8" action={action}>
         <button
           type="submit"
-          className="flex min-h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-300"
+          className="github-login-button relative flex min-h-12 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-white bg-white px-4 py-3 text-sm font-semibold text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
         >
-          <Icon name="github" className="size-5" />
-          {session ? "Cerrar sesión" : "Continuar con GitHub"}
+          <span className="flex items-center justify-center gap-3">
+            <Icon name="github" className="size-5" />
+            {session ? "Cerrar sesión" : "Continuar con GitHub"}
+          </span>
+          <span aria-hidden="true" className="github-login-ink absolute inset-0 flex items-center justify-center gap-3 bg-black text-white">
+            <Icon name="github" className="size-5" />
+            {session ? "Cerrar sesión" : "Continuar con GitHub"}
+          </span>
         </button>
       </form>
       {error && (

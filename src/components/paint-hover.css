@@ -1,0 +1,85 @@
+.paint-hover {
+  overflow: hidden;
+}
+
+.paint-hover:not(.absolute) {
+  position: relative;
+}
+
+.paint-hover-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+  gap: inherit;
+}
+
+.paint-hover-wash {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(255 255 255 / 10%),
+    rgb(255 255 255 / 3%) 65%,
+    transparent
+  );
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 8%);
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+
+.paint-hover-light > .paint-hover-wash {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 18%);
+}
+
+.goal-card > .paint-hover-wash {
+  clip-path: circle(0% at 50% 50%);
+  transform: none;
+  transition:
+    clip-path 250ms ease,
+    opacity 250ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .paint-hover:hover > .paint-hover-wash {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .goal-card:hover > .paint-hover-wash {
+    clip-path: circle(75% at 50% 50%);
+    transform: none;
+  }
+}
+
+.goal-card:has(:focus-visible) > .paint-hover-wash {
+  clip-path: circle(75% at 50% 50%);
+  opacity: 1;
+  transition-duration: 0ms;
+}
+
+.paint-hover:focus-visible > .paint-hover-wash {
+  opacity: 1;
+  transform: scale(1);
+  transition-duration: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paint-hover > .paint-hover-wash,
+  .goal-card:hover > .paint-hover-wash,
+  .goal-card:has(:focus-visible) > .paint-hover-wash {
+    clip-path: none;
+    transform: none;
+    transition: none;
+  }
+}

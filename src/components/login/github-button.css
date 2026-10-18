@@ -1,0 +1,23 @@
+.github-login-ink {
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 250ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .github-login-button:hover .github-login-ink {
+    clip-path: circle(75% at 50% 50%);
+  }
+}
+
+.github-login-button:focus-visible .github-login-ink,
+.github-login-button:active .github-login-ink {
+  clip-path: circle(75% at 50% 50%);
+  transition-duration: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .github-login-button .github-login-ink,
+  .github-login-button:hover .github-login-ink {
+    transition-duration: 0ms;
+  }
+}
