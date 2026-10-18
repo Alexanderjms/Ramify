@@ -8,8 +8,6 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
-  validResourceUrl,
-  isStoredGoalFile,
   type GoalActivity,
   type GoalActivityChanges,
 } from "@/lib/goal-activities";
@@ -18,29 +16,10 @@ import Select from "@/components/select";
 import DatePicker from "@/components/date-picker";
 import BranchColorPicker from "./branch-color-picker";
 import { useLanguage } from "@/components/language-provider";
-import {
-  downloadGoalFile,
-  maxGoalFileSize,
-  removeGoalFile,
-  saveGoalFile,
-} from "@/lib/goal-files";
-
-function animateField(element: HTMLElement, exit = false, move = true) {
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return element.animate(
-    [
-      { opacity: 0, transform: reduced || !move ? "none" : "translateY(6px)" },
-      { opacity: 1, transform: reduced || !move ? "none" : "translateY(0)" },
-    ],
-    {
-      duration: reduced || exit ? 150 : 200,
-      direction: exit ? "reverse" : "normal",
-      easing:
-        getComputedStyle(element).getPropertyValue("--ease-out").trim() ||
-        "ease-out",
-    },
-  );
-}
+import BranchTextField, { type BranchTextFieldName } from "./branch-text-field";
+import BranchResourceField from "./branch-resource-field";
+import BranchSubtaskField from "./branch-subtask-field";
+import { animateField } from "./branch-field-animations";
 
 export default function BranchFields({
   activity,
@@ -49,7 +28,7 @@ export default function BranchFields({
   activity: GoalActivity;
   onUpdate: (id: string, changes: GoalActivityChanges) => boolean;
 }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const [addingResource, setAddingResource] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   const [readingFile, setReadingFile] = useState(false);
@@ -64,6 +43,7 @@ export default function BranchFields({
     error: string;
   } | null>(null);
   const animations = useRef(new Map<HTMLElement, Animation>());
+
   useLayoutEffect(() => {
     const before = previous.current;
     previous.current = { activity, editing, addingResource, addingTask, error };
@@ -131,6 +111,7 @@ export default function BranchFields({
     }
     if (error && error !== before.error) enter(".branch-field-error");
   }, [activity, editing, addingResource, addingTask, error]);
+
   useLayoutEffect(() => {
     const running = animations.current;
     return () => {
@@ -138,14 +119,11 @@ export default function BranchFields({
       running.clear();
     };
   }, []);
+
   const description = useRef<HTMLTextAreaElement>(null);
   const notes = useRef<HTMLTextAreaElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const fieldId = useId();
-  const children = activity.subtasks ?? [];
-  const completed = children.filter(
-    (child) => child.status === "completed",
-  ).length;
+
   function update(changes: GoalActivityChanges, id = activity.id) {
     const saved = onUpdate(id, changes);
     setError(
@@ -154,23 +132,21 @@ export default function BranchFields({
     return saved;
   }
 
-  function edit(field: "description" | "notes") {
+  function edit(field: BranchTextFieldName) {
+    const textarea = field === "description" ? description : notes;
     if (editing === field) {
-      const value =
-        (field === "description" ? description : notes).current?.value ?? "";
+      const value = textarea.current?.value ?? "";
       if (value === (activity[field] ?? "") || update({ [field]: value }))
         setEditing(null);
       return;
     }
     setEditing(field);
-    requestAnimationFrame(() =>
-      (field === "description" ? description : notes).current?.focus(),
-    );
+    requestAnimationFrame(() => textarea.current?.focus());
   }
 
   function saveOnEnter(
     event: KeyboardEvent<HTMLTextAreaElement>,
-    field: "description" | "notes",
+    field: BranchTextFieldName,
   ) {
     if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
     event.preventDefault();
@@ -180,9 +156,15 @@ export default function BranchFields({
         (field === "description"
           ? description
           : notes
-        ).current?.parentElement?.focus({ preventScroll: true }),
+        ).current?.parentElement?.focus({
+          preventScroll: true,
+        }),
       );
     }
+  }
+
+  function updateTextField(field: BranchTextFieldName, value: string) {
+    update(field === "description" ? { description: value } : { notes: value });
   }
 
   return (
@@ -197,54 +179,16 @@ export default function BranchFields({
         </div>
         <h2 id="branch-details-title">{activity.name}</h2>
       </div>
-      <div
-        className="branch-edit-field"
-        data-field="description"
-        tabIndex={-1}
-        data-editing={editing === "description" || undefined}
-      >
-        {editing !== "description" && activity.description && (
-          <p className="branch-field-text">{activity.description}</p>
-        )}
-        <textarea
-          ref={description}
-          hidden={editing !== "description"}
-          id={`${fieldId}-description`}
-          readOnly={editing !== "description"}
-          tabIndex={editing === "description" ? 0 : -1}
-          aria-label={t("Descripción de la meta")}
-          className="branch-description"
-          defaultValue={activity.description ?? ""}
-          placeholder={t("Añadir una descripción…")}
-          rows={2}
-          maxLength={4000}
-          onKeyDown={(event) => saveOnEnter(event, "description")}
-          onBlur={(event) => {
-            if (event.currentTarget.value !== (activity.description ?? ""))
-              update({ description: event.currentTarget.value });
-          }}
-        />
-        <button
-          id={`${fieldId}-description-edit`}
-          type="button"
-          className="branch-edit-button"
-          aria-label={t(
-            editing === "description"
-              ? "Guardar descripción"
-              : "Editar descripción",
-          )}
-          aria-controls={`${fieldId}-description`}
-          onClick={() => edit("description")}
-        >
-          <i
-            aria-hidden="true"
-            className={`bi bi-${editing === "description" ? "check-lg" : "pencil"}`}
-          />
-          {editing !== "description" && !activity.description && (
-            <span>{t("Escribe una descripción")}</span>
-          )}
-        </button>
-      </div>
+      <BranchTextField
+        field="description"
+        id={`${fieldId}-description`}
+        value={activity.description}
+        editing={editing === "description"}
+        textareaRef={description}
+        onEdit={edit}
+        onKeyDown={saveOnEnter}
+        onUpdate={updateTextField}
+      />
       {error && (
         <p role="alert" className="branch-field-error">
           {t(error)}
@@ -323,368 +267,35 @@ export default function BranchFields({
           </dd>
         </div>
       </dl>
-      <section aria-labelledby={`resources-${activity.id}`}>
-        <h3 id={`resources-${activity.id}`}>{t("Recursos")}</h3>
-        {!!activity.resources?.length && (
-          <ul className="branch-resources">
-            {activity.resources.map((resource) => (
-              <li key={resource.id} data-resource-id={resource.id}>
-                <i
-                  aria-hidden="true"
-                  className={`bi bi-${resource.fileName || /\.pdf(?:$|[?#])/i.test(resource.url) ? "file-earmark-text" : "box-arrow-up-right"}`}
-                />
-                <a
-                  href={isStoredGoalFile(resource.url) ? "#" : resource.url}
-                  target={resource.fileName ? undefined : "_blank"}
-                  download={resource.fileName}
-                  rel="noopener noreferrer"
-                  onClick={async (event) => {
-                    if (!isStoredGoalFile(resource.url)) return;
-                    event.preventDefault();
-                    try {
-                      await downloadGoalFile(resource.url, resource.fileName!);
-                    } catch {
-                      setError(
-                        "No se pudo descargar el archivo. Comprueba que sigue guardado en este navegador.",
-                      );
-                    }
-                  }}
-                >
-                  {resource.fileName ?? resource.url}
-                </a>
-                <button
-                  type="button"
-                  aria-label={`${language === "en" ? "Remove resource" : "Eliminar recurso"} ${resource.fileName ?? resource.url}`}
-                  onClick={async (event) => {
-                    const button = event.currentTarget;
-                    button.disabled = true;
-                    await animateField(
-                      button.closest("li")!,
-                      true,
-                    ).finished.catch(() => {});
-                    const removed = update((current) => ({
-                      resources: current.resources!.filter(
-                        (item) => item.id !== resource.id,
-                      ),
-                    }));
-                    if (removed && isStoredGoalFile(resource.url)) {
-                      try {
-                        await removeGoalFile(resource.url);
-                      } catch {
-                        setError(
-                          "Se quitó el recurso, pero no se pudo liberar el archivo local.",
-                        );
-                      }
-                    }
-                    button.disabled = false;
-                  }}
-                >
-                  <i aria-hidden="true" className="bi bi-x" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {addingResource ? (
-          <form
-            className="branch-inline-form branch-compact-form"
-            aria-label={t("Añadir recurso")}
-            data-form="resource"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = event.currentTarget;
-              const urlInput = form.elements.namedItem(
-                "url",
-              ) as HTMLInputElement;
-              const url = urlInput.value.trim();
-              if (!validResourceUrl(url)) {
-                urlInput.setCustomValidity(
-                  t("Usa un enlace http:// o https:// válido."),
-                );
-                urlInput.reportValidity();
-                return;
-              }
-              if (
-                update({
-                  resources: [
-                    ...(activity.resources ?? []),
-                    { id: crypto.randomUUID(), url },
-                  ],
-                })
-              )
-                setAddingResource(false);
-            }}
-          >
-            <input
-              name="url"
-              type="url"
-              aria-label={t("Enlace del recurso")}
-              placeholder="https://…"
-              maxLength={2000}
-              required
-              autoFocus
-              onInput={(event) => event.currentTarget.setCustomValidity("")}
-            />
-            <button
-              type="submit"
-              aria-label={t("Guardar recurso")}
-              title={t("Guardar recurso")}
-            >
-              <i aria-hidden="true" className="bi bi-check-lg" />
-            </button>
-            <button
-              type="button"
-              aria-label={t("Cancelar")}
-              title={t("Cancelar")}
-              onClick={async (event) => {
-                await animateField(
-                  event.currentTarget.closest("form")!,
-                  true,
-                ).finished.catch(() => {});
-                setAddingResource(false);
-              }}
-            >
-              <i aria-hidden="true" className="bi bi-x-lg" />
-            </button>
-          </form>
-        ) : (
-          <div className="branch-resource-actions">
-            <button
-              type="button"
-              className="branch-add-resource"
-              disabled={readingFile || (activity.resources?.length ?? 0) >= 50}
-              onClick={() => setAddingResource(true)}
-            >
-              {t("+ Añadir recurso")}
-            </button>
-            <button
-              type="button"
-              className="branch-add-resource"
-              title={t(
-                "Adjuntar archivo (máximo 20 MB, guardado en este navegador)",
-              )}
-              disabled={readingFile || (activity.resources?.length ?? 0) >= 50}
-              onClick={() => fileInput.current?.click()}
-            >
-              <i aria-hidden="true" className="bi bi-paperclip" />
-              {t(readingFile ? "Leyendo…" : "Adjuntar archivo")}
-            </button>
-          </div>
-        )}
-        <input
-          ref={fileInput}
-          type="file"
-          hidden
-          aria-label={t("Archivo del recurso")}
-          onChange={async (event) => {
-            const file = event.currentTarget.files?.[0];
-            event.currentTarget.value = "";
-            if (!file) return;
-            if (file.size > maxGoalFileSize) {
-              setError("El archivo debe pesar como máximo 20 MB.");
-              return;
-            }
-            setReadingFile(true);
-            try {
-              const url = await saveGoalFile(file);
-              const saved = update((current) => ({
-                resources: [
-                  ...(current.resources ?? []),
-                  {
-                    id: crypto.randomUUID(),
-                    fileName: file.name,
-                    url,
-                  },
-                ],
-              }));
-              if (!saved) await removeGoalFile(url);
-            } catch {
-              setError(
-                "No se pudo guardar el archivo. Comprueba el espacio disponible en este navegador.",
-              );
-            } finally {
-              setReadingFile(false);
-            }
-          }}
-        />
-      </section>
+      <BranchResourceField
+        activity={activity}
+        addingResource={addingResource}
+        setAddingResource={setAddingResource}
+        readingFile={readingFile}
+        setReadingFile={setReadingFile}
+        update={update}
+        setError={setError}
+      />
       <section aria-labelledby={`notes-${activity.id}`}>
         <h3 id={`notes-${activity.id}`}>{t("Notas")}</h3>
-        <div
-          className="branch-edit-field"
-          data-field="notes"
-          tabIndex={-1}
-          data-editing={editing === "notes" || undefined}
-        >
-          {editing !== "notes" && activity.notes && (
-            <p className="branch-field-text">{activity.notes}</p>
-          )}
-          <textarea
-            ref={notes}
-            hidden={editing !== "notes"}
-            id={`${fieldId}-notes`}
-            readOnly={editing !== "notes"}
-            tabIndex={editing === "notes" ? 0 : -1}
-            aria-label={t("Notas de la meta")}
-            className="branch-notes"
-            rows={4}
-            maxLength={10000}
-            defaultValue={activity.notes ?? ""}
-            placeholder={t("Escribe tus notas…")}
-            onKeyDown={(event) => saveOnEnter(event, "notes")}
-            onBlur={(event) => {
-              if (event.currentTarget.value !== (activity.notes ?? ""))
-                update({ notes: event.currentTarget.value });
-            }}
-          />
-          <button
-            id={`${fieldId}-notes-edit`}
-            type="button"
-            className="branch-edit-button"
-            aria-label={t(
-              editing === "notes" ? "Guardar notas" : "Editar notas",
-            )}
-            aria-controls={`${fieldId}-notes`}
-            onClick={() => edit("notes")}
-          >
-            <i
-              aria-hidden="true"
-              className={`bi bi-${editing === "notes" ? "check-lg" : "pencil"}`}
-            />
-            {editing !== "notes" && !activity.notes && (
-              <span>{t("Escribe una nota")}</span>
-            )}
-          </button>
-        </div>
+        <BranchTextField
+          field="notes"
+          id={`${fieldId}-notes`}
+          value={activity.notes}
+          editing={editing === "notes"}
+          textareaRef={notes}
+          onEdit={edit}
+          onKeyDown={saveOnEnter}
+          onUpdate={updateTextField}
+        />
       </section>
-      <section aria-labelledby={`tasks-${activity.id}`}>
-        <h3 id={`tasks-${activity.id}`}>
-          {t("Subtareas")}{" "}
-          <span>
-            · {completed} / {children.length}
-          </span>
-        </h3>
-        {!!children.length && (
-          <div
-            className="sr-only"
-            role="progressbar"
-            aria-label={t("Progreso de las subtareas")}
-            aria-valuenow={Math.round((completed / children.length) * 100)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          />
-        )}
-        {children.length ? (
-          <ul className="branch-subtasks">
-            {children.map((child) => (
-              <li key={child.id} data-task-id={child.id}>
-                <button
-                  type="button"
-                  aria-label={
-                    language === "en"
-                      ? `Mark ${child.name} as ${child.status === "completed" ? "pending" : "completed"}`
-                      : `Marcar ${child.name} como ${child.status === "completed" ? "pendiente" : "completada"}`
-                  }
-                  onClick={() =>
-                    update((current) => ({
-                      subtasks: current.subtasks?.map((task) =>
-                        task.id === child.id
-                          ? {
-                              ...task,
-                              status:
-                                task.status === "completed"
-                                  ? "pending"
-                                  : "completed",
-                            }
-                          : task,
-                      ),
-                    }))
-                  }
-                >
-                  <ActivityStatus status={child.status} />
-                  <span>{child.name}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="branch-empty">
-            {t("Esta meta todavía no tiene subtareas.")}
-          </p>
-        )}
-        {addingTask ? (
-          <form
-            className="branch-inline-form branch-compact-form"
-            aria-label={t("Añadir subtarea")}
-            data-form="task"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const input = event.currentTarget.elements.namedItem(
-                "name",
-              ) as HTMLInputElement;
-              if (!input.value.trim()) {
-                input.setCustomValidity(t("Escribe el nombre de la subtarea."));
-                input.reportValidity();
-                return;
-              }
-              const task = {
-                id: crypto.randomUUID(),
-                name: input.value.trim(),
-                status: "pending" as const,
-              };
-              if (
-                update((current) => ({
-                  subtasks: [...(current.subtasks ?? []), task],
-                }))
-              ) {
-                setAddingTask(false);
-                setError("");
-              } else
-                setError("No se pudo guardar la subtarea. Inténtalo de nuevo.");
-            }}
-          >
-            <input
-              name="name"
-              aria-label={t("Nombre de la subtarea")}
-              placeholder={t("Nombre de la subtarea")}
-              required
-              maxLength={100}
-              autoFocus
-              onInput={(event) => event.currentTarget.setCustomValidity("")}
-            />
-            <button
-              type="submit"
-              aria-label={t("Guardar subtarea")}
-              title={t("Guardar (Enter)")}
-            >
-              <i aria-hidden="true" className="bi bi-check-lg" />
-            </button>
-            <button
-              type="button"
-              aria-label={t("Cancelar")}
-              title={t("Cancelar")}
-              onClick={async (event) => {
-                await animateField(
-                  event.currentTarget.closest("form")!,
-                  true,
-                ).finished.catch(() => {});
-                setAddingTask(false);
-              }}
-            >
-              <i aria-hidden="true" className="bi bi-x-lg" />
-            </button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            className="branch-add-task"
-            onClick={() => setAddingTask(true)}
-          >
-            <i aria-hidden="true" className="bi bi-plus-lg" />
-            {t("Añadir subtarea")}
-          </button>
-        )}
-      </section>
+      <BranchSubtaskField
+        activity={activity}
+        addingTask={addingTask}
+        setAddingTask={setAddingTask}
+        update={update}
+        setError={setError}
+      />
     </div>
   );
 }

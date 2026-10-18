@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef } from "react";
-import { colors } from "./icon-picker";
+import { goalColors } from "./goal-colors";
 import { useLanguage } from "@/components/language-provider";
 import "./branch-color-picker.css";
 
@@ -51,7 +51,7 @@ export default function BranchColorPicker({
       >
         <h3>{t("Color de la meta")}</h3>
         <div className="branch-color-swatches">
-          {colors.slice(0, 18).map(([label, value]) => (
+          {goalColors.slice(0, 18).map(([label, value]) => (
             <button
               type="button"
               key={value}
