@@ -5,13 +5,15 @@ import NewGoalButton from "./new-goal-button";
 import type { Goal } from "@/lib/goals";
 import EmptyGoals from "@/components/goals/empty-goals";
 import { useGoals } from "@/components/goals/goals-provider";
+import { useLanguage } from "@/components/language-provider";
 
 function RecentGoals({ goals }: { goals: Goal[] }) {
+  const { t } = useLanguage();
   return (
     <section id="metas" aria-labelledby="goals-heading" className="scroll-mt-8">
       <div className="mb-7 flex items-center justify-between gap-4">
         <h2 id="goals-heading" className="text-base font-medium">
-          Metas recientes
+          {t("Metas recientes")}
         </h2>
         <NewGoalButton />
       </div>

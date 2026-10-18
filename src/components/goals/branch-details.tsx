@@ -6,6 +6,7 @@ import {
   type GoalActivityChanges,
 } from "@/lib/goal-activities";
 import BranchFields from "./branch-fields";
+import { useLanguage } from "@/components/language-provider";
 import "./branch-details.css";
 
 export default function BranchDetails({
@@ -13,15 +14,14 @@ export default function BranchDetails({
   activity,
   source,
   onUpdate,
-  onCreate,
 }: {
   dialogRef: RefObject<HTMLDialogElement | null>;
   activity?: GoalActivity;
   source: HTMLElement | null;
   onUpdate: (id: string, changes: GoalActivityChanges) => boolean;
-  onCreate: (parent: string, name: string) => boolean;
 }) {
   const connector = useRef<SVGPathElement>(null);
+  const { t, language } = useLanguage();
   const terminals = useRef<SVGGElement>(null);
   const startTerminal = useRef<SVGGElement>(null);
   const pinnedTask = useRef<HTMLButtonElement>(null);
@@ -226,8 +226,12 @@ export default function BranchDetails({
         type="button"
         className="branch-pinned-task"
         style={{ borderColor: activity?.color }}
-        aria-label={`Volver a la tarea ${activity?.name ?? "seleccionada"}`}
-        title="Volver a la tarea en el diagrama"
+        aria-label={
+          language === "en"
+            ? `Return to task ${activity?.name ?? "selected"}`
+            : `Volver a la tarea ${activity?.name ?? "seleccionada"}`
+        }
+        title={t("Volver a la tarea en el diagrama")}
         onClick={() => {
           source?.scrollIntoView({
             block: "center",
@@ -256,11 +260,11 @@ export default function BranchDetails({
         className="branch-details app-scrollbar"
       >
         <header className="branch-details-header">
-          <span>Detalles de actividad</span>
+          <span>{t("Detalles de actividad")}</span>
           <button
             type="button"
             autoFocus
-            aria-label="Cerrar detalles de la meta"
+            aria-label={t("Cerrar detalles de la meta")}
             onClick={() => dialogRef.current?.close()}
             className="branch-details-close"
           >
@@ -272,7 +276,6 @@ export default function BranchDetails({
             key={activity.id}
             activity={activity}
             onUpdate={onUpdate}
-            onCreate={onCreate}
           />
         )}
       </dialog>

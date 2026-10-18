@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/components/language-provider";
 import Image from "next/image";
 import type { Session } from "next-auth";
 import Icon from "@/components/icon";
@@ -12,23 +15,24 @@ export default function LoginCard({
   error?: string | string[];
   action: () => Promise<void>;
 }) {
+  const { t, language } = useLanguage();
   return (
     <div className="w-full max-w-[380px] rounded-2xl border border-white/15 bg-[#090b10]/50 px-7 py-10 text-center shadow-2xl backdrop-blur-xl sm:px-9">
       <Image
         src="/Logo.svg"
-        alt="Logo de Ramify"
+        alt={t("Logo de Ramify")}
         width={72}
         height={72}
         priority
         className="mx-auto mb-6"
       />
       <h1 className="text-3xl font-medium tracking-tight">
-        {session ? "Sesión iniciada" : "Iniciar sesión"}
+        {t(session ? "Sesión iniciada" : "Iniciar sesión")}
       </h1>
       <p className="mt-3 text-sm leading-6 text-zinc-400">
         {session
-          ? `Sesión iniciada como ${session.user?.name ?? "usuario de GitHub"}.`
-          : "Accede a Ramify con tu cuenta de GitHub."}
+          ? `${language === "en" ? "Signed in as" : "Sesión iniciada como"} ${session.user?.name ?? "GitHub"}.`
+          : t("Accede a Ramify con tu cuenta de GitHub.")}
       </p>
       <form className="mt-8" action={action}>
         <button
@@ -37,19 +41,24 @@ export default function LoginCard({
         >
           <span className="flex items-center justify-center gap-3">
             <Icon name="github" className="size-5" />
-            {session ? "Cerrar sesión" : "Continuar con GitHub"}
+            {t(session ? "Cerrar sesión" : "Continuar con GitHub")}
           </span>
-          <span aria-hidden="true" className="github-login-ink absolute inset-0 flex items-center justify-center gap-3 bg-black text-white">
+          <span
+            aria-hidden="true"
+            className="github-login-ink absolute inset-0 flex items-center justify-center gap-3 bg-black text-white"
+          >
             <Icon name="github" className="size-5" />
-            {session ? "Cerrar sesión" : "Continuar con GitHub"}
+            {t(session ? "Cerrar sesión" : "Continuar con GitHub")}
           </span>
         </button>
       </form>
       {error && (
         <p role="alert" className="mt-4 text-sm leading-5 text-amber-200">
-          {error === "configuration"
-            ? "Completa AUTH_GITHUB_ID, AUTH_GITHUB_SECRET y AUTH_SECRET en .env para activar el acceso."
-            : "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub."}
+          {t(
+            error === "configuration"
+              ? "Completa AUTH_GITHUB_ID, AUTH_GITHUB_SECRET y AUTH_SECRET en .env para activar el acceso."
+              : "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub.",
+          )}
         </p>
       )}
     </div>

@@ -11,6 +11,7 @@ import {
 } from "react";
 import PaintHover from "@/components/paint-hover";
 import Icon from "@/components/icon";
+import { useLanguage } from "@/components/language-provider";
 import "@/components/ui-motion.css";
 
 export default function Select<T extends string>({
@@ -31,6 +32,7 @@ export default function Select<T extends string>({
   chevron?: boolean;
 }) {
   const id = useId();
+  const { t } = useLanguage();
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -121,7 +123,7 @@ export default function Select<T extends string>({
         ref={trigger}
         type="button"
         role="combobox"
-        aria-label={label}
+        aria-label={t(label)}
         aria-expanded={open}
         aria-controls={`${id}-list`}
         aria-haspopup="listbox"
@@ -138,7 +140,7 @@ export default function Select<T extends string>({
             {icon}
           </span>
           <span key={value} className="select-label">
-            {placeholder ?? options[selected]?.label}
+            {t(placeholder ?? options[selected]?.label ?? "")}
           </span>
         </PaintHover>
       </button>
@@ -146,7 +148,7 @@ export default function Select<T extends string>({
         ref={menu}
         id={`${id}-list`}
         role="listbox"
-        aria-label={label}
+        aria-label={t(label)}
         aria-hidden={!open}
         inert={!open}
         data-open={open}
@@ -167,7 +169,7 @@ export default function Select<T extends string>({
           >
             <span className="flex items-center gap-2">
               {option.icon}
-              {option.label}
+              {t(option.label)}
             </span>
             <Icon name="tick" className="select-check size-3.5" />
           </div>

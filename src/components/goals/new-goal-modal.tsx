@@ -5,6 +5,7 @@ import type { Goal } from "@/lib/goals";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import IconPicker from "./icon-picker";
+import { useLanguage } from "@/components/language-provider";
 import "./new-goal-modal.css";
 
 export default function NewGoalModal({
@@ -17,6 +18,7 @@ export default function NewGoalModal({
   ) => void;
 }) {
   const form = useRef<HTMLFormElement>(null);
+  const { t } = useLanguage();
   const [icon, setIcon] = useState("flag-fill");
   const [color, setColor] = useState("#FFFFFF");
   const [formKey, setFormKey] = useState(0);
@@ -52,11 +54,11 @@ export default function NewGoalModal({
           id="new-goal-title"
           className="text-xl font-semibold tracking-[-0.4px]"
         >
-          Crear nueva meta
+          {t("Crear nueva meta")}
         </h2>
         <button
           type="button"
-          aria-label="Cerrar"
+          aria-label={t("Cerrar")}
           onClick={() => dialogRef.current?.close()}
           className="paint-hover flex cursor-pointer rounded p-1 text-zinc-400"
         >
@@ -69,7 +71,7 @@ export default function NewGoalModal({
         id="new-goal-description"
         className="mb-6 mt-3 text-xs leading-5 text-zinc-400"
       >
-        Añade el nombre y personaliza el icono de tu meta.
+        {t("Añade el nombre y personaliza el icono de tu meta.")}
       </p>
       <form
         ref={form}
@@ -80,7 +82,7 @@ export default function NewGoalModal({
             "name",
           ) as HTMLInputElement;
           if (!nameInput.value.trim()) {
-            nameInput.setCustomValidity("Escribe el nombre de la meta.");
+            nameInput.setCustomValidity(t("Escribe el nombre de la meta."));
             nameInput.reportValidity();
             return;
           }
@@ -102,29 +104,29 @@ export default function NewGoalModal({
         className="flex flex-col gap-5"
       >
         <label className="flex flex-col gap-2 text-xs">
-          Nombre de la meta
+          {t("Nombre de la meta")}
           <input
             name="name"
             required
             maxLength={100}
             autoFocus
-            placeholder="Ej. Aprender inglés"
+            placeholder={t("Ej. Aprender inglés")}
             onInput={(event) => event.currentTarget.setCustomValidity("")}
             className="min-h-10 rounded border border-zinc-800 bg-black px-3 text-[13px] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
           />
         </label>
         <label className="flex flex-col gap-2 text-xs">
-          Descripción (opcional)
+          {t("Descripción (opcional)")}
           <textarea
             name="description"
             maxLength={1000}
             rows={3}
-            placeholder="Describe la meta"
+            placeholder={t("Describe la meta")}
             className="min-h-24 resize-y rounded border border-zinc-800 bg-black px-3 py-2.5 text-[13px] leading-5 outline-none placeholder:text-zinc-500 focus:border-zinc-500"
           />
         </label>
         <div className="flex flex-col gap-2">
-          <span className="text-xs">Icono</span>
+          <span className="text-xs">{t("Icono")}</span>
           <IconPicker
             icon={icon}
             color={color}
@@ -134,7 +136,7 @@ export default function NewGoalModal({
         </div>
         {error && (
           <p role="alert" className="text-xs leading-5 text-red-400">
-            {error}
+            {t(error)}
           </p>
         )}
         <div className="mt-1 flex justify-end gap-2 border-t border-zinc-800 pt-5">
@@ -143,7 +145,7 @@ export default function NewGoalModal({
             onClick={() => dialogRef.current?.close()}
             className="paint-hover flex cursor-pointer rounded border border-zinc-800 px-3 py-2 text-xs"
           >
-            <PaintHover>Cancelar</PaintHover>
+            <PaintHover>{t("Cancelar")}</PaintHover>
           </button>
           <button
             type="submit"
@@ -151,7 +153,7 @@ export default function NewGoalModal({
           >
             <PaintHover>
               <Icon name="plus" className="size-4" />
-              Crear meta
+              {t("Crear meta")}
             </PaintHover>
           </button>
         </div>

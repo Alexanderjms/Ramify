@@ -3,9 +3,11 @@
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useGoals } from "@/components/goals/goals-provider";
+import { useLanguage } from "@/components/language-provider";
 
 export default function NewGoalButton() {
   const { openCreateGoal } = useGoals();
+  const { t } = useLanguage();
   return (
     <button
       type="button"
@@ -14,7 +16,7 @@ export default function NewGoalButton() {
     >
       <PaintHover>
         <Icon name="plus" className="size-[15px]" />
-        Nueva meta
+        {t("Nueva meta")}
       </PaintHover>
     </button>
   );

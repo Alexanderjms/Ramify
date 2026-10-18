@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { type GoalActivity } from "@/lib/goal-activities";
+import BranchColorPicker from "./branch-color-picker";
+import { useLanguage } from "@/components/language-provider";
 
 export function ActivityStatus({ status }: { status: GoalActivity["status"] }) {
   return (
@@ -29,6 +31,7 @@ export default function GoalDiagram({
   onSelect,
   onCreate,
   onMove,
+  onColor,
   onCollapseAll,
   onExpandAll,
 }: {
@@ -38,10 +41,12 @@ export default function GoalDiagram({
   onSelect: (activity: GoalActivity, source: HTMLElement) => void;
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
+  onColor: (id: string, color: string) => void;
   onCollapseAll: () => void;
   onExpandAll: () => void;
 }) {
   const viewport = useRef<HTMLDivElement>(null);
+  const { t, language } = useLanguage();
   const drag = useRef<{
     x: number;
     y: number;
@@ -49,6 +54,10 @@ export default function GoalDiagram({
     top: number;
   } | null>(null);
   const [zoom, setZoom] = useState(1);
+  const zoomId = useId();
+  const zoomPopover = useRef<HTMLDivElement>(null);
+  const zoomInput = useRef<HTMLInputElement>(null);
+  const zoomTrigger = useRef<HTMLButtonElement>(null);
   const [creating, setCreating] = useState<string | null>(null);
   const createTrigger = useRef<HTMLButtonElement | null>(null);
   const reorderStart = useRef(0);
@@ -68,7 +77,10 @@ export default function GoalDiagram({
   ) {
     const visible: GoalActivity[] =
       creating === parentId
-        ? [{ id: "", name: "", color, status: "pending" }, ...items]
+        ? [
+            ...items,
+            { id: "", name: "", color, status: "pending" } as GoalActivity,
+          ]
         : items;
     visible.forEach((activity, index) => {
       if (index) cursor += parentX === 66 ? 12 : 0;
@@ -94,6 +106,8 @@ export default function GoalDiagram({
     });
   }
   layout(activities, 66, "");
+  const trunkEnd =
+    (nodes.filter((node) => node.parentX === 66).at(-1)?.y ?? 136) - 48;
   const width = Math.max(
     700,
     ...nodes.map(
@@ -109,7 +123,7 @@ export default function GoalDiagram({
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
       setZoom((value) =>
-        Math.max(0.35, Math.min(2, value - event.deltaY * 0.002)),
+        Math.max(0.35, Math.min(2, value - Math.sign(event.deltaY) * 0.1)),
       );
     }
     element.addEventListener("wheel", wheel, { passive: false });
@@ -152,8 +166,16 @@ export default function GoalDiagram({
     return (
       <button
         className="goal-add-branch"
-        aria-label={`Añadir meta a ${name}`}
-        title={`Añadir meta a ${name}`}
+        aria-label={
+          language === "en"
+            ? `Add goal to ${parent ? name : "goal"}`
+            : `Añadir meta a ${name}`
+        }
+        title={
+          language === "en"
+            ? `Add goal to ${parent ? name : "goal"}`
+            : `Añadir meta a ${name}`
+        }
         aria-expanded={creating === parent}
         onClick={(event) => {
           createTrigger.current = event.currentTarget;
@@ -166,7 +188,7 @@ export default function GoalDiagram({
         }}
       >
         <i aria-hidden="true" className="bi bi-plus-lg" />
-        {parent === "" && <span>Nueva meta</span>}
+        {parent === "" && <span>{t("Nueva meta")}</span>}
       </button>
     );
   }
@@ -177,8 +199,8 @@ export default function GoalDiagram({
       <button
         type="button"
         className="goal-settings-button"
-        aria-label="Configuración de la vista"
-        title="Configuración de la vista"
+        aria-label={t("Configuración de la vista")}
+        title={t("Configuración de la vista")}
         popoverTarget={settingsId}
       >
         <i aria-hidden="true" className="bi bi-sliders2" />
@@ -187,10 +209,10 @@ export default function GoalDiagram({
         id={settingsId}
         popover="auto"
         className="goal-settings-menu"
-        aria-label="Configuración de la vista"
+        aria-label={t("Configuración de la vista")}
       >
         <h2 className="px-3 py-2 text-[11px] font-medium text-zinc-400">
-          Configuración de la vista
+          {t("Configuración de la vista")}
         </h2>
         <button
           type="button"
@@ -199,7 +221,7 @@ export default function GoalDiagram({
           onClick={reset}
         >
           <i aria-hidden="true" className="bi bi-crosshair" />
-          Centrar lienzo
+          {t("Centrar lienzo")}
         </button>
         <button
           type="button"
@@ -208,7 +230,7 @@ export default function GoalDiagram({
           onClick={fit}
         >
           <i aria-hidden="true" className="bi bi-fullscreen" />
-          Ajustar a pantalla
+          {t("Ajustar a pantalla")}
         </button>
         <button
           type="button"
@@ -217,7 +239,7 @@ export default function GoalDiagram({
           onClick={onExpandAll}
         >
           <i aria-hidden="true" className="bi bi-arrows-expand" />
-          Expandir todas las metas
+          {t("Expandir todas las metas")}
         </button>
         <button
           type="button"
@@ -226,14 +248,14 @@ export default function GoalDiagram({
           onClick={collapseAll}
         >
           <i aria-hidden="true" className="bi bi-arrows-collapse" />
-          Contraer todas las metas
+          {t("Contraer todas las metas")}
         </button>
       </div>
       <div
         ref={viewport}
         className="goal-canvas app-scrollbar"
         role="region"
-        aria-label="Diagrama de la meta"
+        aria-label={t("Diagrama de la meta")}
         tabIndex={0}
         onPointerDown={(event) => {
           if (
@@ -280,10 +302,38 @@ export default function GoalDiagram({
               fill="none"
               strokeLinecap="round"
             >
+              <defs>
+                <linearGradient
+                  id={`${settingsId}-trunk`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="66"
+                  y1="-12"
+                  x2="66"
+                  y2={trunkEnd}
+                >
+                  <stop offset="0" stopColor="#64748B" />
+                  {nodes
+                    .filter((node) => node.parentX === 66)
+                    .map((node) => (
+                      <stop
+                        key={node.activity.id}
+                        offset={(node.y - 36) / (trunkEnd + 12)}
+                        stopColor={node.activity.color}
+                      />
+                    ))}
+                  <stop
+                    offset="1"
+                    stopColor={
+                      nodes.filter((node) => node.parentX === 66).at(-1)
+                        ?.activity.color ?? "#64748B"
+                    }
+                  />
+                </linearGradient>
+              </defs>
               <path
                 className="goal-root-connection"
-                d={`M104 -12 C104 32,66 40,66 88 V${height - 40}`}
-                stroke="#64748B"
+                d={`M104 -12 C104 32,66 40,66 88 V${trunkEnd}`}
+                stroke={`url(#${settingsId}-trunk)`}
                 strokeWidth="5"
               />
               {nodes.map((node) => (
@@ -315,16 +365,33 @@ export default function GoalDiagram({
                     />
                   );
                 })}
-              {nodes.map((node) => (
-                <circle
-                  key={node.activity.id}
-                  cx={node.x}
-                  cy={node.y}
-                  r="9"
-                  fill={node.activity.color}
-                />
-              ))}
+              {nodes
+                .filter((node) => !node.activity.id)
+                .map((node) => (
+                  <circle
+                    key={node.activity.id}
+                    cx={node.x}
+                    cy={node.y}
+                    r="9"
+                    fill={node.activity.color}
+                  />
+                ))}
             </svg>
+            {nodes
+              .filter((node) => node.activity.id)
+              .map(({ activity, x, y }) => (
+                <div
+                  key={activity.id}
+                  className="goal-node-color"
+                  style={{ left: x - 14, top: y - 14 }}
+                >
+                  <BranchColorPicker
+                    name={activity.name}
+                    color={activity.color}
+                    onChange={(color) => onColor(activity.id, color)}
+                  />
+                </div>
+              ))}
             {nodes.map(({ activity, x, y, parentId, order, total }) => (
               <div
                 key={activity.id}
@@ -351,7 +418,7 @@ export default function GoalDiagram({
                 {!activity.id ? (
                   <form
                     className="goal-inline-create"
-                    aria-label="Crear meta"
+                    aria-label={t("Crear meta")}
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
                         event.preventDefault();
@@ -371,8 +438,8 @@ export default function GoalDiagram({
                     <input
                       key={creating}
                       name="name"
-                      aria-label="Nombre de la nueva meta"
-                      placeholder="Nombre de la meta"
+                      aria-label={t("Nombre de la nueva meta")}
+                      placeholder={t("Nombre de la meta")}
                       required
                       maxLength={100}
                       autoFocus
@@ -392,15 +459,15 @@ export default function GoalDiagram({
                     />
                     <button
                       type="submit"
-                      aria-label="Guardar meta"
-                      title="Guardar (Enter)"
+                      aria-label={t("Guardar meta")}
+                      title={t("Guardar (Enter)")}
                     >
                       <i aria-hidden="true" className="bi bi-check-lg" />
                     </button>
                     <button
                       type="button"
-                      aria-label="Cancelar meta"
-                      title="Cancelar (Escape)"
+                      aria-label={t("Cancelar meta")}
+                      title={t("Cancelar (Escape)")}
                       onClick={closeEditor}
                     >
                       <i aria-hidden="true" className="bi bi-x-lg" />
@@ -420,7 +487,11 @@ export default function GoalDiagram({
                     {!!activity.children?.length && (
                       <button
                         className="goal-node-chevron"
-                        aria-label={`${collapsed.has(activity.id) ? "Expandir" : "Contraer"} meta ${activity.name}`}
+                        aria-label={
+                          language === "en"
+                            ? `${collapsed.has(activity.id) ? "Expand" : "Collapse"} goal ${activity.name}`
+                            : `${collapsed.has(activity.id) ? "Expandir" : "Contraer"} meta ${activity.name}`
+                        }
                         aria-expanded={!collapsed.has(activity.id)}
                         onClick={() => {
                           if (creating === activity.id) closeEditor();
@@ -437,16 +508,16 @@ export default function GoalDiagram({
                       <span
                         className="goal-status-indicator"
                         role="img"
-                        aria-label={
+                        aria-label={t(
                           activity.status === "completed"
                             ? "Completada"
-                            : "En proceso"
-                        }
-                        title={
+                            : "En proceso",
+                        )}
+                        title={t(
                           activity.status === "completed"
                             ? "Completada"
-                            : "En proceso"
-                        }
+                            : "En proceso",
+                        )}
                       >
                         <ActivityStatus status={activity.status} />
                       </span>
@@ -456,8 +527,10 @@ export default function GoalDiagram({
                       <button
                         type="button"
                         className="goal-reorder"
-                        aria-label={`Reordenar meta ${activity.name}`}
-                        title="Arrastra para ordenar. Con teclado: flechas arriba y abajo."
+                        aria-label={`${language === "en" ? "Reorder goal" : "Reordenar meta"} ${activity.name}`}
+                        title={t(
+                          "Arrastra para ordenar. Con teclado: flechas arriba y abajo.",
+                        )}
                         aria-pressed={reordering?.id === activity.id}
                         onKeyDown={(event) => {
                           if (event.key === "Escape") {
@@ -553,41 +626,117 @@ export default function GoalDiagram({
       <div
         className="goal-canvas-tools"
         role="group"
-        aria-label="Herramientas del lienzo"
+        aria-label={t("Herramientas del lienzo")}
       >
         <button
-          aria-label="Alejar"
+          aria-label={t("Alejar")}
           disabled={zoom <= 0.35}
           onClick={() => setZoom((value) => Math.max(0.35, value - 0.1))}
         >
           <i aria-hidden="true" className="bi bi-dash-lg" />
         </button>
         <button
-          aria-label="Restablecer zoom"
-          onClick={reset}
+          ref={zoomTrigger}
+          aria-label={t("Cambiar porcentaje de zoom")}
+          aria-haspopup="dialog"
+          popoverTarget={zoomId}
           className="min-w-12 text-white"
         >
           {Math.round(zoom * 100)}%
         </button>
         <button
-          aria-label="Acercar"
+          aria-label={t("Acercar")}
           disabled={zoom >= 2}
           onClick={() => setZoom((value) => Math.min(2, value + 0.1))}
         >
           <i aria-hidden="true" className="bi bi-plus-lg" />
         </button>
-        <button aria-label="Centrar" onClick={reset}>
+        <button aria-label={t("Centrar")} onClick={reset}>
           <i aria-hidden="true" className="bi bi-crosshair" />
         </button>
-        <button aria-label="Ajustar a pantalla" onClick={fit}>
+        <button aria-label={t("Ajustar a pantalla")} onClick={fit}>
           <i aria-hidden="true" className="bi bi-fullscreen" />
         </button>
-        <button aria-label="Expandir metas" onClick={onExpandAll}>
+        <button aria-label={t("Expandir metas")} onClick={onExpandAll}>
           <i aria-hidden="true" className="bi bi-arrows-expand" />
         </button>
-        <button aria-label="Contraer metas" onClick={collapseAll}>
+        <button aria-label={t("Contraer metas")} onClick={collapseAll}>
           <i aria-hidden="true" className="bi bi-arrows-collapse" />
         </button>
+      </div>
+      <div
+        ref={zoomPopover}
+        id={zoomId}
+        popover="auto"
+        role="dialog"
+        aria-label={t("Porcentaje de zoom")}
+        className="goal-zoom-popover"
+        onToggle={(event) => {
+          if (event.newState === "open" && zoomInput.current) {
+            zoomInput.current.value = String(Math.round(zoom * 100));
+            zoomInput.current.focus();
+            zoomInput.current.select();
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            zoomPopover.current?.hidePopover();
+            zoomTrigger.current?.focus();
+          }
+        }}
+      >
+        <h2>{t("Zoom del lienzo")}</h2>
+        <div className="goal-zoom-presets">
+          {[50, 75, 100, 125, 150, 200].map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={Math.round(zoom * 100) === value}
+              onClick={() => {
+                setZoom(value / 100);
+                zoomPopover.current?.hidePopover();
+                zoomTrigger.current?.focus();
+              }}
+            >
+              {value}%
+            </button>
+          ))}
+        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = zoomInput.current!.valueAsNumber;
+            if (!Number.isFinite(value) || value < 35 || value > 200) return;
+            setZoom(value / 100);
+            zoomPopover.current?.hidePopover();
+            zoomTrigger.current?.focus();
+          }}
+        >
+          <label htmlFor={`${zoomId}-value`}>{t("Personalizado")}</label>
+          <div>
+            <input
+              ref={zoomInput}
+              id={`${zoomId}-value`}
+              type="number"
+              min="35"
+              max="200"
+              step="1"
+              required
+              aria-describedby={`${zoomId}-hint`}
+            />
+            <span>%</span>
+            <button
+              type="submit"
+              aria-label={t("Aplicar zoom")}
+              title={t("Aplicar (Enter)")}
+            >
+              <i aria-hidden="true" className="bi bi-check-lg" />
+            </button>
+          </div>
+          <p id={`${zoomId}-hint`}>{t("Entre 35 % y 200 %")}</p>
+        </form>
       </div>
     </div>
   );

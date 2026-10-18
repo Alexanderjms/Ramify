@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 import Select from "./select";
+import { useLanguage } from "./language-provider";
 import "./date-picker.css";
 
 function localDate(year: number, month: number, day: number) {
@@ -26,28 +27,6 @@ function parseDate(value: string) {
     : null;
 }
 
-const months = Array.from({ length: 12 }, (_, month) => ({
-  value: String(month),
-  label: new Intl.DateTimeFormat("es", { month: "long" }).format(
-    localDate(2026, month, 1),
-  ),
-}));
-const weekdays = [
-  "lunes",
-  "martes",
-  "miércoles",
-  "jueves",
-  "viernes",
-  "sábado",
-  "domingo",
-];
-const fullDate = new Intl.DateTimeFormat("es", { dateStyle: "full" });
-const shortDate = new Intl.DateTimeFormat("es", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-});
-
 export default function DatePicker({
   label,
   value,
@@ -58,6 +37,24 @@ export default function DatePicker({
   onChange: (value: string) => boolean | void;
 }) {
   const id = useId();
+  const { language, t } = useLanguage();
+  const months = Array.from({ length: 12 }, (_, month) => ({
+    value: String(month),
+    label: new Intl.DateTimeFormat(language, { month: "long" }).format(
+      localDate(2026, month, 1),
+    ),
+  }));
+  const weekdays = Array.from({ length: 7 }, (_, day) =>
+    new Intl.DateTimeFormat(language, { weekday: "long" }).format(
+      localDate(2026, 0, 5 + day),
+    ),
+  );
+  const fullDate = new Intl.DateTimeFormat(language, { dateStyle: "full" });
+  const shortDate = new Intl.DateTimeFormat(language, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
   const anchor = `--date-${id.replace(/[^a-z0-9]/gi, "")}`;
   const trigger = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
@@ -145,21 +142,21 @@ export default function DatePicker({
         type="button"
         className="date-picker-trigger"
         style={{ anchorName: anchor }}
-        aria-label={`${label}: ${selected ? shortDate.format(selected) : "Sin fecha"}`}
+        aria-label={`${t(label)}: ${selected ? shortDate.format(selected) : t("Sin fecha")}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={id}
         popoverTarget={id}
       >
         <i aria-hidden="true" className="bi bi-calendar3" />
-        <span>{selected ? shortDate.format(selected) : "Sin fecha"}</span>
+        <span>{selected ? shortDate.format(selected) : t("Sin fecha")}</span>
       </button>
       <div
         ref={popover}
         id={id}
         popover="auto"
         role="dialog"
-        aria-label={`Elegir ${label.toLocaleLowerCase("es")}`}
+        aria-label={`${language === "en" ? "Choose" : "Elegir"} ${t(label).toLocaleLowerCase(language)}`}
         className="calendar-popover"
         style={{ positionAnchor: anchor }}
         onToggle={(event) => {
@@ -191,7 +188,7 @@ export default function DatePicker({
           <div className="calendar-navigation">
             <button
               type="button"
-              aria-label="Mes anterior"
+              aria-label={t("Mes anterior")}
               disabled={year === 1 && month.getMonth() === 0}
               onClick={() => changeMonth(year, month.getMonth() - 1)}
             >
@@ -199,7 +196,7 @@ export default function DatePicker({
             </button>
             <button
               type="button"
-              aria-label="Mes siguiente"
+              aria-label={t("Mes siguiente")}
               disabled={year === 9999 && month.getMonth() === 11}
               onClick={() => changeMonth(year, month.getMonth() + 1)}
             >
@@ -208,11 +205,12 @@ export default function DatePicker({
           </div>
         </div>
         <p className="sr-only" aria-live="polite">
-          {months[month.getMonth()].label} de {year}
+          {months[month.getMonth()].label} {language === "es" ? "de " : ""}
+          {year}
         </p>
         <table
           role="grid"
-          aria-label={`${months[month.getMonth()].label} de ${year}`}
+          aria-label={`${months[month.getMonth()].label} ${language === "es" ? "de " : ""}${year}`}
           className="calendar-grid"
         >
           <thead>
@@ -261,10 +259,10 @@ export default function DatePicker({
         </table>
         <div className="calendar-footer">
           <button type="button" onClick={() => choose(today)}>
-            Hoy
+            {t("Hoy")}
           </button>
           <button type="button" disabled={!value} onClick={() => choose("")}>
-            Quitar fecha
+            {t("Quitar fecha")}
           </button>
         </div>
       </div>

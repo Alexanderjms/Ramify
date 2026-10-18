@@ -1,0 +1,101 @@
+.profile-trigger {
+  anchor-name: --profile-trigger;
+}
+.profile-popover {
+  position: fixed;
+  inset: 64px 20px auto auto;
+  margin: 0;
+  width: 276px;
+  max-width: calc(100vw - 24px);
+  overflow: visible;
+  padding: 8px;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  background: #09090b;
+  color: #e4e4e7;
+  box-shadow: 0 8px 28px #0008;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out),
+    display 180ms allow-discrete,
+    overlay 180ms allow-discrete;
+}
+@supports (top: anchor(bottom)) {
+  .profile-popover {
+    position-anchor: --profile-trigger;
+    inset: auto;
+    top: calc(anchor(bottom) + 8px);
+    right: anchor(right);
+    position-try-fallbacks: flip-inline, flip-block;
+  }
+}
+.profile-popover:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+@starting-style {
+  .profile-popover:popover-open {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+.profile-language {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 6px 12px;
+  font-size: 12px;
+}
+.profile-language > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.profile-language .select-menu {
+  left: auto;
+  right: 0;
+}
+.profile-popover form {
+  border-top: 1px solid #27272a;
+  padding-top: 6px;
+}
+.profile-signout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.profile-signout:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+.profile-popover button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .profile-signout:hover:not(:disabled) {
+    background: #27272a;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-popover,
+  .profile-popover:popover-open {
+    transform: none;
+    transition:
+      opacity 150ms ease,
+      display 150ms allow-discrete,
+      overlay 150ms allow-discrete;
+  }
+}

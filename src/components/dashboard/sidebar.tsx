@@ -6,6 +6,7 @@ import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useGoals } from "@/components/goals/goals-provider";
 import GoalSymbol from "@/components/goals/goal-symbol";
+import { useLanguage } from "@/components/language-provider";
 
 export default function Sidebar({
   collapsed,
@@ -19,10 +20,11 @@ export default function Sidebar({
   goalId?: string;
 }) {
   const { goals } = useGoals();
+  const { t } = useLanguage();
   return (
     <aside
       className={`dashboard-sidebar sticky top-0 flex h-svh shrink-0 flex-col gap-6 border-r border-zinc-800 px-3 pb-3 sm:px-4 sm:pb-4 ${collapsed ? "w-[68px]" : "w-[68px] md:w-[252px]"}`}
-      aria-label="Barra lateral"
+      aria-label={t("Barra lateral")}
     >
       <div className="-mx-3 flex h-14 shrink-0 items-center gap-2.5 border-b border-zinc-800 px-4 sm:-mx-4">
         <Image
@@ -41,9 +43,9 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onToggle}
-          aria-label={
-            collapsed ? "Expandir barra lateral" : "Contraer barra lateral"
-          }
+          aria-label={t(
+            collapsed ? "Expandir barra lateral" : "Contraer barra lateral",
+          )}
           aria-expanded={!collapsed}
           className={`paint-hover size-8 shrink-0 items-center justify-center rounded [&>.paint-hover-wash]:shadow-none ${collapsed ? "absolute left-[76px] top-3 z-10 flex" : "ml-auto hidden md:flex"} cursor-pointer text-zinc-400`}
         >
@@ -53,7 +55,10 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="flex flex-col gap-1" aria-label="Navegación principal">
+      <nav
+        className="flex flex-col gap-1"
+        aria-label={t("Navegación principal")}
+      >
         <Link
           href="/dashboard"
           aria-current={page === "Dashboard" ? "page" : undefined}
@@ -68,7 +73,7 @@ export default function Sidebar({
         <Link
           href="/metas"
           aria-current={page === "Metas" && !goalId ? "page" : undefined}
-          title="Metas"
+          title={t("Metas")}
           className={`paint-hover flex items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] ${!collapsed ? "md:hidden" : ""} ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
         >
           <PaintHover>
@@ -76,7 +81,9 @@ export default function Sidebar({
               aria-hidden="true"
               className="bi bi-rocket-takeoff-fill text-[17px] leading-none"
             />
-            {!collapsed && <span className="hidden md:inline">Metas</span>}
+            {!collapsed && (
+              <span className="hidden md:inline">{t("Metas")}</span>
+            )}
           </PaintHover>
         </Link>
         {!collapsed && (
@@ -85,7 +92,7 @@ export default function Sidebar({
             className="sidebar-goals group hidden md:block"
           >
             <summary
-              aria-label="Metas"
+              aria-label={t("Metas")}
               className={`paint-hover flex cursor-pointer list-none items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white [&::-webkit-details-marker]:hidden ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
             >
               <PaintHover>
@@ -93,7 +100,7 @@ export default function Sidebar({
                   aria-hidden="true"
                   className="bi bi-rocket-takeoff-fill text-[17px] leading-none"
                 />
-                <span className="flex-1">Metas</span>
+                <span className="flex-1">{t("Metas")}</span>
                 <Icon
                   name="chevron"
                   className="size-3 text-zinc-400 transition-transform duration-[280ms] ease-[ease] motion-reduce:transition-none group-open:rotate-90"
@@ -101,7 +108,7 @@ export default function Sidebar({
               </PaintHover>
             </summary>
             <nav
-              aria-label="Metas del sidebar"
+              aria-label={t("Metas del sidebar")}
               className="app-scrollbar ml-[18px] mt-2 flex max-h-[calc(100svh-210px)] flex-col gap-1 overflow-y-auto border-l border-zinc-800 pl-2"
             >
               {goals.map((goal) => (
@@ -122,7 +129,7 @@ export default function Sidebar({
               ))}
               {!goals.length && (
                 <span className="px-2 py-2 text-xs text-zinc-500">
-                  No hay metas creadas
+                  {t("No hay metas creadas")}
                 </span>
               )}
             </nav>

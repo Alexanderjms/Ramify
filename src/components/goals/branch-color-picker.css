@@ -1,0 +1,132 @@
+.branch-color-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.branch-color-trigger > span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transition: box-shadow 160ms ease;
+}
+.branch-color-trigger:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+.branch-color-popover {
+  position: fixed;
+  inset: 25vh auto auto 40%;
+  margin: 0;
+  width: 240px;
+  max-width: calc(100vw - 24px);
+  padding: 14px;
+  border: 1px solid #3f3f46;
+  border-radius: 7px;
+  color: #e4e4e7;
+  background: #09090b;
+  box-shadow: 0 8px 28px #0008;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.97);
+  transition:
+    opacity 180ms ease,
+    transform 180ms var(--ease-out),
+    display 180ms allow-discrete,
+    overlay 180ms allow-discrete;
+  pointer-events: auto;
+}
+@supports (top: anchor(bottom)) {
+  .branch-color-popover {
+    inset: auto;
+    top: calc(anchor(bottom) + 8px);
+    left: anchor(left);
+    position-try-fallbacks: flip-inline, flip-block;
+    position-visibility: anchors-visible;
+  }
+}
+.branch-color-popover:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+@starting-style {
+  .branch-color-popover:popover-open {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+.branch-color-popover h3 {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.branch-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+}
+.branch-color-swatches button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.branch-color-swatches button > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  color: #09090b;
+  font-size: 14px;
+}
+.branch-color-swatches button[aria-pressed="true"] {
+  background: #27272a;
+}
+.branch-custom-color {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid #27272a;
+  padding-top: 10px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+.branch-color-popover input[type="color"] {
+  width: 32px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid #3f3f46;
+  cursor: pointer;
+  background: transparent;
+}
+.branch-color-popover :is(button, input):focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .branch-color-trigger:hover > span {
+    box-shadow: 0 0 0 4px #ffffff20;
+  }
+  .branch-color-swatches button:hover {
+    background: #27272a;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .branch-color-popover,
+  .branch-color-popover:popover-open {
+    transition: none;
+    transform: none;
+  }
+  .branch-color-trigger > span {
+    transition: none;
+  }
+}

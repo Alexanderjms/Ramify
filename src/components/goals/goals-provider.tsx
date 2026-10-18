@@ -19,8 +19,7 @@ import {
 import NewGoalModal from "./new-goal-modal";
 
 type ActivityUpdate =
-  | GoalActivity[]
-  | ((current: GoalActivity[]) => GoalActivity[]);
+  GoalActivity[] | ((current: GoalActivity[]) => GoalActivity[]);
 const GoalsContext = createContext<{
   goals: Goal[];
   openCreateGoal: () => void;
@@ -105,6 +104,7 @@ export default function GoalsProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(
             goalsStorageKey,
             JSON.stringify([
+              ...current,
               {
                 ...goal,
                 id: crypto.randomUUID(),
@@ -113,7 +113,6 @@ export default function GoalsProvider({ children }: { children: ReactNode }) {
                 completedTasks: 0,
                 activity: "Ahora",
               },
-              ...current,
             ]),
           );
           window.dispatchEvent(new Event("ramify:goals-updated"));

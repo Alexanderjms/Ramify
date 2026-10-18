@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/components/language-provider";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import type { Goal } from "@/lib/goals";
@@ -5,36 +8,37 @@ import GoalSymbol from "./goal-symbol";
 import Link from "next/link";
 
 export default function GoalsTable({ goals }: { goals: Goal[] }) {
+  const { t } = useLanguage();
   return (
     <div
       className="app-scrollbar relative w-full overflow-x-auto"
       role="region"
-      aria-label="Lista de metas"
+      aria-label={t("Lista de metas")}
       tabIndex={0}
     >
       <table
         className="w-full min-w-[760px] border-collapse text-left text-xs"
-        aria-label="Metas"
+        aria-label={t("Metas")}
       >
         <thead className="border-b border-zinc-800 text-[11px] text-zinc-400">
           <tr>
             <th scope="col" className="w-[48%] px-4 pb-3 font-normal">
-              Nombre
+              {t("Nombre")}
             </th>
             <th scope="col" className="px-4 pb-3 font-normal">
-              Estado
+              {t("Estado")}
             </th>
             <th scope="col" className="px-4 pb-3 font-normal">
-              Progreso
+              {t("Progreso")}
             </th>
             <th scope="col" className="px-4 pb-3 font-normal">
-              Tareas
+              {t("Tareas")}
             </th>
             <th scope="col" className="whitespace-nowrap px-4 pb-3 font-normal">
-              Última actividad
+              {t("Última actividad")}
             </th>
             <th scope="col" className="w-10 pb-3">
-              <span className="sr-only">Opciones</span>
+              <span className="sr-only">{t("Opciones")}</span>
             </th>
           </tr>
         </thead>
@@ -72,28 +76,30 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
                     name={goal.progress === 100 ? "check" : "circle"}
                     className="size-3"
                   />
-                  {goal.progress === 100
-                    ? "Completada"
-                    : goal.progress === 0
-                      ? "Sin comenzar"
-                      : "En progreso"}
+                  {t(
+                    goal.progress === 100
+                      ? "Completada"
+                      : goal.progress === 0
+                        ? "Sin comenzar"
+                        : "En progreso",
+                  )}
                 </span>
               </td>
               <td className="whitespace-nowrap px-4 py-5 text-[11px] text-zinc-400">
-                {goal.progress}% completado
+                {goal.progress}% {t("completado")}
               </td>
               <td className="whitespace-nowrap px-4 py-5 text-[11px] tabular-nums text-zinc-400">
                 {goal.completedTasks} / {goal.tasks}
               </td>
               <td className="whitespace-nowrap px-4 py-5 text-[11px] text-zinc-400">
-                {goal.activity}
+                {t(goal.activity)}
               </td>
               <td className="pr-4">
                 <button
                   type="button"
                   disabled
-                  aria-label={`Opciones de ${goal.name} (próximamente)`}
-                  title="Opciones: próximamente"
+                  aria-label={`${t("Opciones de")} ${goal.name} ${t("(próximamente)")}`}
+                  title={t("Opciones: próximamente")}
                   className="paint-hover flex rounded p-1 text-zinc-400"
                 >
                   <PaintHover>

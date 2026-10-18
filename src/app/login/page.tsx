@@ -11,7 +11,10 @@ export default function Login(props: PageProps<"/login">) {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-svh items-center justify-center bg-[#050609] text-zinc-400" aria-label="Cargando inicio de sesión">
+        <main
+          className="flex min-h-svh items-center justify-center bg-[#050609] text-zinc-400"
+          aria-label="Cargando inicio de sesión"
+        >
           Cargando…
         </main>
       }
@@ -25,14 +28,17 @@ async function LoginContent({ searchParams }: PageProps<"/login">) {
   const { error } = await searchParams;
   const configured = Boolean(
     process.env.AUTH_GITHUB_ID &&
-      process.env.AUTH_GITHUB_SECRET &&
-      process.env.AUTH_SECRET,
+    process.env.AUTH_GITHUB_SECRET &&
+    process.env.AUTH_SECRET,
   );
   const session = configured ? await auth() : null;
 
   return (
     <main className="relative isolate flex min-h-svh flex-col overflow-hidden bg-[#050609] text-white">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[#050609]" aria-hidden="true">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 bg-[#050609]"
+        aria-hidden="true"
+      >
         <GradientASCII fontFamily="monospace" />
         <div className="absolute inset-0 bg-black/30" />
       </div>

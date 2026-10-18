@@ -380,3 +380,123 @@
     animation: none !important;
   }
 }
+.goal-node-color {
+  position: absolute;
+  transition:
+    top 280ms ease,
+    left 280ms ease;
+}
+.goal-node-color:has(:popover-open) {
+  z-index: 3;
+}
+.goal-zoom-popover {
+  position: fixed;
+  inset: auto 24px 70px auto;
+  margin: 0;
+  width: 240px;
+  max-width: calc(100vw - 24px);
+  padding: 14px;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: #09090b;
+  color: #e4e4e7;
+  opacity: 0;
+  transform: translateY(5px) scale(0.97);
+  transform-origin: bottom right;
+  transition:
+    opacity 180ms ease,
+    transform 180ms var(--ease-out),
+    display 180ms allow-discrete,
+    overlay 180ms allow-discrete;
+}
+.goal-zoom-popover:popover-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+@starting-style {
+  .goal-zoom-popover:popover-open {
+    opacity: 0;
+    transform: translateY(5px) scale(0.97);
+  }
+}
+.goal-zoom-popover h2 {
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.goal-zoom-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.goal-zoom-popover button {
+  min-height: 32px;
+  border: 1px solid #27272a;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+.goal-zoom-presets button[aria-pressed="true"] {
+  background: #27272a;
+  color: white;
+  border-color: #71717a;
+}
+.goal-zoom-popover label {
+  display: block;
+  margin-bottom: 7px;
+  color: #a1a1aa;
+  font-size: 12px;
+}
+.goal-zoom-popover form > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.goal-zoom-popover input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 8px;
+  border: 2px solid #27272a;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+.goal-zoom-popover input:focus {
+  border-color: #a78bfa;
+}
+.goal-zoom-popover form button {
+  width: 32px;
+  flex-shrink: 0;
+}
+.goal-zoom-popover form span,
+.goal-zoom-popover p {
+  color: #71717a;
+  font-size: 11px;
+}
+.goal-zoom-popover p {
+  margin-top: 7px;
+}
+.goal-zoom-popover button:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .goal-zoom-popover button:hover {
+    background: #27272a;
+    color: white;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goal-zoom-popover,
+  .goal-zoom-popover:popover-open {
+    transition: none;
+    transform: none;
+  }
+}

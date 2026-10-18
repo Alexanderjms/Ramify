@@ -1,3 +1,10 @@
+export function isStoredGoalFile(value: unknown): boolean {
+  return (
+    typeof value === "string" &&
+    /^ramify-file:[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(value)
+  );
+}
+
 export type GoalResource = {
   id: string;
   url: string;
@@ -11,6 +18,7 @@ export type GoalActivity = {
   color: string;
   status: "pending" | "progress" | "completed";
   children?: GoalActivity[];
+  subtasks?: { id: string; name: string; status: "pending" | "completed" }[];
   description?: string;
   priority?: "low" | "medium" | "high";
   targetDate?: string;
@@ -19,8 +27,18 @@ export type GoalActivity = {
 };
 
 export type GoalActivityChanges =
-  | Partial<GoalActivity>
-  | ((current: GoalActivity) => Partial<GoalActivity>);
+  Partial<GoalActivity> | ((current: GoalActivity) => Partial<GoalActivity>);
+
+export function colorActivity(
+  activity: GoalActivity,
+  color: string,
+): GoalActivity {
+  return {
+    ...activity,
+    color,
+    children: activity.children?.map((child) => colorActivity(child, color)),
+  };
+}
 
 export function validResourceUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 2000) return false;
@@ -180,16 +198,35 @@ export function validActivities(
                   resource.fileName.length <= 255 &&
                   !/[\x00-\x1f]/.test(resource.fileName) &&
                   typeof resource.url === "string" &&
-                  resource.url.length <= 1398145 &&
-                  /^data:application\/octet-stream;base64,[A-Za-z0-9+/]*={0,2}$/.test(
-                    resource.url,
-                  )),
+                  (isStoredGoalFile(resource.url) ||
+                    (resource.url.length <= 1398145 &&
+                      /^data:application\/octet-stream;base64,[A-Za-z0-9+/]*={0,2}$/.test(
+                        resource.url,
+                      )))),
           ) ||
           new Set(item.resources.map((resource: GoalResource) => resource.id))
             .size !== item.resources.length)
       )
         return false;
       ids.add(item.id);
+      if (
+        item.subtasks !== undefined &&
+        (!Array.isArray(item.subtasks) ||
+          item.subtasks.length > 2000 ||
+          !item.subtasks.every(
+            (task: NonNullable<GoalActivity["subtasks"]>[number]) =>
+              task &&
+              typeof task.id === "string" &&
+              task.id &&
+              typeof task.name === "string" &&
+              task.name.trim() &&
+              task.name.length <= 100 &&
+              ["pending", "completed"].includes(task.status),
+          ) ||
+          new Set(item.subtasks.map((task: { id: string }) => task.id)).size !==
+            item.subtasks.length)
+      )
+        return false;
       return (
         item.children === undefined ||
         validActivities(item.children, ids, depth + 1)

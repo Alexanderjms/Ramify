@@ -6,11 +6,12 @@ import bootstrapIcons from "bootstrap-icons/font/bootstrap-icons.json";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import GoalSymbol from "./goal-symbol";
+import { useLanguage } from "@/components/language-provider";
 
 const icons = Object.keys(bootstrapIcons)
   .filter((name) => name.endsWith("-fill"))
   .sort();
-const colors = [
+export const colors = [
   ["Blanco", "#FFFFFF"],
   ["Azul", "#3B82F6"],
   ["Violeta", "#A78BFA"],
@@ -82,6 +83,7 @@ export default function IconPicker({
 }) {
   const [query, setQuery] = useState("");
   const [colorPage, setColorPage] = useState(0);
+  const { t } = useLanguage();
   const palette = useRef<HTMLDivElement>(null);
   const paletteAnimation = useRef<Animation | null>(null);
   const pendingPage = useRef(0);
@@ -164,7 +166,7 @@ export default function IconPicker({
       >
         <PaintHover>
           <GoalSymbol goal={{ icon, color }} />
-          <span>Cambiar icono y color</span>
+          <span>{t("Cambiar icono y color")}</span>
           <Icon name="down" className="size-3 text-zinc-400" />
         </PaintHover>
       </button>
@@ -195,11 +197,11 @@ export default function IconPicker({
             id={`${id}-title`}
             className="text-lg font-semibold tracking-[-0.4px]"
           >
-            Icono y color
+            {t("Icono y color")}
           </h2>
           <button
             type="button"
-            aria-label="Cerrar selector de iconos"
+            aria-label={t("Cerrar selector de iconos")}
             onClick={() => dialog.current?.close()}
             className="paint-hover flex cursor-pointer rounded p-1 text-zinc-400"
           >
@@ -213,12 +215,12 @@ export default function IconPicker({
         </div>
         <div
           role="group"
-          aria-label="Color del icono"
+          aria-label={t("Color del icono")}
           className="mb-3 flex w-full items-center justify-between gap-1"
         >
           <button
             type="button"
-            aria-label="Colores anteriores"
+            aria-label={t("Colores anteriores")}
             disabled={colorPage === 0}
             onClick={(event) => changeColorPage(-1, event)}
             className="paint-hover flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25 sm:size-7"
@@ -237,8 +239,8 @@ export default function IconPicker({
                 <button
                   key={value}
                   type="button"
-                  aria-label={label}
-                  title={label}
+                  aria-label={t(label)}
+                  title={t(label)}
                   aria-pressed={color === value}
                   onClick={() => onColorChange(value)}
                   className={`paint-hover flex aspect-square w-full min-w-0 max-w-7 cursor-pointer items-center justify-center rounded border ${color === value ? "border-zinc-500 bg-zinc-800" : "border-transparent"}`}
@@ -259,7 +261,7 @@ export default function IconPicker({
           </div>
           <button
             type="button"
-            aria-label="Colores siguientes"
+            aria-label={t("Colores siguientes")}
             disabled={colorPage === colorPages - 1}
             onClick={(event) => changeColorPage(1, event)}
             className="paint-hover flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25 sm:size-7"
@@ -277,8 +279,8 @@ export default function IconPicker({
           <input
             type="search"
             autoFocus
-            aria-label="Buscar iconos"
-            placeholder="Buscar iconos (star, book, heart…)"
+            aria-label={t("Buscar iconos")}
+            placeholder={t("Buscar iconos (star, book, heart…)")}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -289,7 +291,7 @@ export default function IconPicker({
         </label>
         <div
           role="group"
-          aria-label="Iconos Bootstrap Fill"
+          aria-label={t("Iconos Bootstrap Fill")}
           className="app-scrollbar grid max-h-[min(320px,40svh)] grid-cols-6 gap-1.5 overflow-y-auto overscroll-contain p-1 pr-2 sm:grid-cols-9"
         >
           {results.map((name) => (
@@ -315,15 +317,15 @@ export default function IconPicker({
         <div className="mt-5 flex items-center justify-between gap-4 border-t border-zinc-800 pt-4">
           <p role="status" className="text-[11px] text-zinc-500">
             {results.length
-              ? `${results.length} iconos`
-              : "No se encontraron iconos."}
+              ? `${results.length} ${t("iconos")}`
+              : t("No se encontraron iconos.")}
           </p>
           <button
             type="button"
             onClick={() => dialog.current?.close()}
             className="paint-hover flex cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium"
           >
-            <PaintHover>Listo</PaintHover>
+            <PaintHover>{t("Listo")}</PaintHover>
           </button>
         </div>
       </dialog>

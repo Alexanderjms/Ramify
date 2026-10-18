@@ -4,16 +4,19 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import {
   flattenActivities,
+  colorActivity,
   mapActivities,
   type GoalActivity,
 } from "@/lib/goal-activities";
 import { useGoals } from "./goals-provider";
 import GoalDiagram from "./goal-diagram";
 import BranchDetails from "./branch-details";
+import { useLanguage } from "@/components/language-provider";
 import "./goal-details.css";
 
 export default function GoalDetails({ id }: { id: string }) {
   const { goals, updateActivities } = useGoals();
+  const { t } = useLanguage();
   const goal = goals.find((goal) => goal.id === id);
   const [collapsed, setCollapsed] = useState<Set<string>>(
     new Set(["modulo-1"]),
@@ -65,9 +68,9 @@ export default function GoalDetails({ id }: { id: string }) {
         parent
           ? mapActivities(current, parent, (activity) => ({
               ...activity,
-              children: [item, ...(activity.children ?? [])],
+              children: [...(activity.children ?? []), item],
             }))
-          : [item, ...current],
+          : [...current, item],
       )
     )
       return false;
@@ -102,9 +105,11 @@ export default function GoalDetails({ id }: { id: string }) {
     return (
       <div className="p-8">
         <Link href="/metas" className="text-xs text-zinc-400">
-          ← Metas
+          ← {t("Metas")}
         </Link>
-        <h1 className="mt-6 text-xl font-semibold">Meta no encontrada</h1>
+        <h1 className="mt-6 text-xl font-semibold">
+          {t("Meta no encontrada")}
+        </h1>
       </div>
     );
 
@@ -112,10 +117,17 @@ export default function GoalDetails({ id }: { id: string }) {
     <div className="goal-detail">
       {error && (
         <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
-          {error}
+          {t(error)}
         </p>
       )}
       <GoalDiagram
+        onColor={(activityId, color) =>
+          save((current) =>
+            mapActivities(current, activityId, (item) =>
+              colorActivity(item, color),
+            ),
+          )
+        }
         activities={activities}
         collapsed={collapsed}
         onToggle={toggle}
@@ -144,13 +156,14 @@ export default function GoalDetails({ id }: { id: string }) {
         source={selectedSource}
         onUpdate={(activityId, changes) =>
           save((current) =>
-            mapActivities(current, activityId, (item) => ({
-              ...item,
-              ...(typeof changes === "function" ? changes(item) : changes),
-            })),
+            mapActivities(current, activityId, (item) => {
+              const patch =
+                typeof changes === "function" ? changes(item) : changes;
+              const next = { ...item, ...patch };
+              return patch.color ? colorActivity(next, patch.color) : next;
+            }),
           )
         }
-        onCreate={addBranch}
       />
     </div>
   );
