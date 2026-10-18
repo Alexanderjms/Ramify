@@ -17,7 +17,7 @@ export default function LoginCard({
 }) {
   const { t, language } = useLanguage();
   return (
-    <div className="w-full max-w-[380px] rounded-2xl border border-white/15 bg-[#090b10]/50 px-7 py-10 text-center shadow-2xl backdrop-blur-xl sm:px-9">
+    <div className="w-full max-w-[380px] rounded-2xl border border-white/15 bg-[#090b10]/50 px-5 py-8 text-center shadow-2xl backdrop-blur-xl sm:px-9 sm:py-10">
       <Image
         src="/Logo.svg"
         alt={t("Logo de Ramify")}

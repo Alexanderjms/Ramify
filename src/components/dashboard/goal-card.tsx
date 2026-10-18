@@ -1,31 +1,24 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
-import { TooltipButton } from "@/components/tooltip";
-import Icon from "@/components/icon";
+import GoalCardMenu from "@/components/goals/goal-card-menu";
 import PaintHover from "@/components/paint-hover";
 import type { Goal } from "@/lib/goals";
+import { formatGoalActivityTime } from "@/lib/goal-activity-time";
 import GoalSymbol from "@/components/goals/goal-symbol";
 import Link from "next/link";
 
 export default function GoalCard({ goal }: { goal: Goal }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const activityTime = formatGoalActivityTime(goal.lastActivityAt, language);
   return (
     <article className="goal-card paint-hover flex min-w-0 cursor-pointer flex-col gap-[18px] rounded-[5px] border border-zinc-800 p-5">
       <PaintHover block>
         <div className="flex items-center justify-between">
           <GoalSymbol goal={goal} />
-          <TooltipButton
-            type="button"
-            disabled
-            aria-label={`${t("Opciones de")} ${goal.name} ${t("(próximamente)")}`}
-            title={t("Opciones: próximamente")}
-            className="relative z-20 text-zinc-400"
-          >
-            <Icon name="more" className="size-4" />
-          </TooltipButton>
+          <GoalCardMenu goal={goal} />
         </div>
-        <div>
+        <div className="min-w-0 [overflow-wrap:anywhere]">
           <h3 className="text-base font-medium">{goal.name}</h3>
           <p className="mt-2 text-xs leading-[18px] text-zinc-400">
             {goal.description}
@@ -58,11 +51,13 @@ export default function GoalCard({ goal }: { goal: Goal }) {
             />
           </div>
         </div>
-        <div className="flex items-center justify-between text-[10px] text-zinc-400">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-zinc-400">
           <span>
             {goal.tasks} {t("tareas")}
           </span>
-          <span>{t(goal.activity)}</span>
+          <span title={activityTime?.title}>
+            {activityTime?.text ?? t(goal.activity)}
+          </span>
         </div>
       </PaintHover>
       {goal.id && (

@@ -2,6 +2,9 @@ import type { GoalActivity } from "./goal-activities";
 
 export type Goal = {
   activities?: GoalActivity[];
+  activitiesVersion?: number;
+  activitiesInitialized?: boolean;
+  syncPending?: boolean;
   id?: string;
   icon?: string;
   name: string;
@@ -10,6 +13,7 @@ export type Goal = {
   progress: number;
   tasks: number;
   completedTasks: number;
+  lastActivityAt?: number | null;
   activity: string;
 };
 

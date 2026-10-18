@@ -7,6 +7,7 @@ import { getDatabase } from "@/lib/db";
 import { loadGoalView } from "@/lib/goal-view";
 import DashboardShell from "@/components/dashboard/shell";
 import GoalDetails from "@/components/goals/goal-details";
+import { GoalDiagramSkeleton } from "@/components/goals/goal-loading-skeleton";
 
 export const metadata: Metadata = { title: "Meta · Ramify" };
 
@@ -32,7 +33,7 @@ export default function GoalPage({
     <Suspense
       fallback={
         <DashboardShell page="Metas" canvas>
-          <p className="p-8 text-xs text-zinc-400">Cargando meta…</p>
+          <GoalDiagramSkeleton />
         </DashboardShell>
       }
     >

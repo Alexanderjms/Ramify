@@ -10,6 +10,7 @@ node_modules/
 *.mjs
 !/scripts/check-priority.mjs
 !/scripts/check-tooltips.mjs
+!/scripts/check-responsive.mjs
 .next/
 /out/
 /build

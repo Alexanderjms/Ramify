@@ -1,140 +1,168 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useGoals } from "@/components/goals/goals-provider";
 import GoalSymbol from "@/components/goals/goal-symbol";
+import { GoalSidebarSkeleton } from "@/components/goals/goal-loading-skeleton";
 import { useLanguage } from "@/components/language-provider";
 
 export default function Sidebar({
   collapsed,
-  onToggle,
   page,
   goalId,
 }: {
   collapsed: boolean;
-  onToggle: () => void;
   page: "Dashboard" | "Metas";
   goalId?: string;
 }) {
-  const { goals } = useGoals();
+  const { goals, loading } = useGoals();
   const { t } = useLanguage();
+  const [goalsExpanded, setGoalsExpanded] = useState(Boolean(goalId));
+  const metasLabel = (
+    <>
+      <i
+        aria-hidden="true"
+        className="bi bi-rocket-takeoff-fill shrink-0 text-[17px] leading-none"
+      />
+      <span className="sidebar-label hidden shrink-0 md:inline">
+        {t("Metas")}
+      </span>
+    </>
+  );
+  const dashboardLabel = (
+    <>
+      <Icon name="home" className="size-[17px] shrink-0 text-zinc-400" />
+      <span className="sidebar-label hidden shrink-0 md:inline">Dashboard</span>
+    </>
+  );
   return (
     <aside
       className={`dashboard-sidebar sticky top-0 flex h-svh shrink-0 flex-col gap-6 border-r border-zinc-800 px-3 pb-3 sm:px-4 sm:pb-4 ${collapsed ? "w-[68px]" : "w-[68px] md:w-[252px]"}`}
       aria-label={t("Barra lateral")}
+      data-collapsed={collapsed}
     >
       <div className="-mx-3 flex h-14 shrink-0 items-center gap-2.5 border-b border-zinc-800 px-4 sm:-mx-4">
-        <Image
-          src="/Logo.svg"
-          alt=""
-          width={30}
-          height={30}
-          className="shrink-0"
-          priority
-        />
-        {!collapsed && (
-          <span className="hidden text-[22px] font-semibold tracking-[-0.8px] md:block">
+        <Link
+          href="/dashboard"
+          aria-label="Ramify — Dashboard"
+          className="flex min-w-0 items-center gap-2.5 overflow-hidden whitespace-nowrap text-white transition-opacity hover:opacity-80"
+        >
+          <Image
+            src="/Logo.svg"
+            alt=""
+            width={30}
+            height={30}
+            className="shrink-0"
+            priority
+          />
+          <span className="sidebar-label hidden shrink-0 text-[22px] font-semibold tracking-[-0.8px] md:block">
             Ramify
           </span>
-        )}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={t(
-            collapsed ? "Expandir barra lateral" : "Contraer barra lateral",
-          )}
-          aria-expanded={!collapsed}
-          className={`paint-hover size-8 shrink-0 items-center justify-center rounded [&>.paint-hover-wash]:shadow-none ${collapsed ? "absolute left-[76px] top-3 z-10 flex" : "ml-auto hidden md:flex"} cursor-pointer text-zinc-400`}
-        >
-          <PaintHover>
-            <Icon name="panel" className="size-[15px]" />
-          </PaintHover>
-        </button>
+        </Link>
       </div>
 
       <nav
-        className="flex flex-col gap-1"
+        className="sidebar-navigation flex flex-col gap-1 overflow-hidden whitespace-nowrap"
         aria-label={t("Navegación principal")}
       >
         <Link
           href="/dashboard"
           aria-current={page === "Dashboard" ? "page" : undefined}
           aria-label="Dashboard"
-          className={`paint-hover flex items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] ${page === "Dashboard" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
+          className={`${page === "Dashboard" ? "" : "paint-hover"} flex items-center gap-2.5 overflow-hidden rounded px-2.5 py-[9px] text-[13px] ${page === "Dashboard" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
         >
-          <PaintHover>
-            <Icon name="home" className="size-[17px] text-zinc-400" />
-            {!collapsed && <span className="hidden md:inline">Dashboard</span>}
-          </PaintHover>
+          {page === "Dashboard" ? (
+            dashboardLabel
+          ) : (
+            <PaintHover>{dashboardLabel}</PaintHover>
+          )}
         </Link>
-        <Link
-          href="/metas"
-          aria-current={page === "Metas" && !goalId ? "page" : undefined}
-          aria-label={t("Metas")}
-          className={`paint-hover flex items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] ${!collapsed ? "md:hidden" : ""} ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
-        >
-          <PaintHover>
-            <i
-              aria-hidden="true"
-              className="bi bi-rocket-takeoff-fill text-[17px] leading-none"
-            />
-            {!collapsed && (
-              <span className="hidden md:inline">{t("Metas")}</span>
-            )}
-          </PaintHover>
-        </Link>
-        {!collapsed && (
-          <details
-            open={page === "Metas"}
-            className="sidebar-goals group hidden md:block"
+        <div className="sidebar-goals-group">
+          <div
+            className={`relative flex items-center overflow-hidden rounded ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
           >
-            <summary
+            <Link
+              href="/metas"
+              aria-current={page === "Metas" && !goalId ? "page" : undefined}
               aria-label={t("Metas")}
-              className={`paint-hover flex cursor-pointer list-none items-center gap-2.5 rounded px-2.5 py-[9px] text-[13px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white [&::-webkit-details-marker]:hidden ${page === "Metas" ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
+              className={`${page === "Metas" ? "" : "paint-hover"} flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden rounded px-2.5 py-[9px] text-[13px]`}
             >
-              <PaintHover>
-                <i
-                  aria-hidden="true"
-                  className="bi bi-rocket-takeoff-fill text-[17px] leading-none"
-                />
-                <span className="flex-1">{t("Metas")}</span>
-                <Icon
-                  name="chevron"
-                  className="size-3 text-zinc-400 transition-transform duration-[280ms] ease-[ease] motion-reduce:transition-none group-open:rotate-90"
-                />
-              </PaintHover>
-            </summary>
-            <nav
-              aria-label={t("Metas del sidebar")}
-              className="app-scrollbar ml-[18px] mt-2 flex max-h-[calc(100svh-210px)] flex-col gap-1 overflow-y-auto border-l border-zinc-800 pl-2"
-            >
-              {goals.map((goal) => (
-                <Link
-                  key={goal.id}
-                  href={`/metas/${goal.id}`}
-                  aria-current={goal.id === goalId ? "page" : undefined}
-                  aria-label={goal.name}
-                  className={`paint-hover flex min-w-0 items-center gap-2 rounded px-2 py-2 text-xs ${goal.id === goalId ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
-                >
-                  <PaintHover>
-                    <span className="flex shrink-0 items-center [&_i]:text-[13px] [&_svg]:size-3.5">
-                      <GoalSymbol goal={goal} />
-                    </span>
-                    <span className="min-w-0 truncate">{goal.name}</span>
-                  </PaintHover>
-                </Link>
-              ))}
-              {!goals.length && (
-                <span className="px-2 py-2 text-xs text-zinc-500">
-                  {t("No hay metas creadas")}
-                </span>
+              {page === "Metas" ? (
+                metasLabel
+              ) : (
+                <PaintHover>{metasLabel}</PaintHover>
               )}
-            </nav>
-          </details>
-        )}
+            </Link>
+            <button
+              type="button"
+              aria-label={t(goalsExpanded ? "Ocultar metas" : "Mostrar metas")}
+              aria-expanded={goalsExpanded}
+              aria-controls="sidebar-goals-list"
+              onClick={() => setGoalsExpanded((open) => !open)}
+              className="sidebar-label absolute right-0 top-0.5 hidden size-8 cursor-pointer items-center justify-center rounded text-zinc-400 md:flex"
+              inert={collapsed}
+            >
+              <Icon
+                name="chevron"
+                className={`size-3 transition-transform duration-[280ms] ease-[ease] motion-reduce:transition-none ${goalsExpanded ? "rotate-90" : ""}`}
+              />
+            </button>
+          </div>
+          <div
+            id="sidebar-goals-list"
+            className="sidebar-goals-content hidden md:grid"
+            data-open={goalsExpanded && !collapsed}
+            inert={!goalsExpanded || collapsed}
+          >
+            <div className="sidebar-goals-clip">
+              <nav
+                aria-label={t("Metas del sidebar")}
+                aria-busy={loading && goals.length === 0}
+                className="app-scrollbar ml-[18px] mt-2 flex max-h-[calc(100svh-210px)] flex-col gap-1 overflow-y-auto border-l border-zinc-800 pl-2"
+              >
+                {loading && goals.length === 0 ? (
+                  <GoalSidebarSkeleton />
+                ) : (
+                  goals.map((goal) => {
+                    const selected = goal.id === goalId;
+                    const content = (
+                      <>
+                        <span className="flex shrink-0 items-center [&_i]:text-[13px] [&_svg]:size-3.5">
+                          <GoalSymbol goal={goal} />
+                        </span>
+                        <span className="min-w-0 truncate">{goal.name}</span>
+                      </>
+                    );
+                    return (
+                      <Link
+                        key={goal.id}
+                        href={`/metas/${goal.id}`}
+                        aria-current={selected ? "page" : undefined}
+                        aria-label={goal.name}
+                        className={`${selected ? "" : "paint-hover"} flex min-w-0 items-center gap-2 rounded px-2 py-2 text-xs ${selected ? "bg-zinc-900 text-white" : "text-zinc-400"}`}
+                      >
+                        {selected ? (
+                          content
+                        ) : (
+                          <PaintHover>{content}</PaintHover>
+                        )}
+                      </Link>
+                    );
+                  })
+                )}
+                {!loading && !goals.length && (
+                  <span className="px-2 py-2 text-xs text-zinc-500">
+                    {t("No hay metas creadas")}
+                  </span>
+                )}
+              </nav>
+            </div>
+          </div>
+        </div>
       </nav>
     </aside>
   );

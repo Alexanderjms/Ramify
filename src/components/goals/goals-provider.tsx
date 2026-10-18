@@ -2,12 +2,16 @@
 
 import {
   createContext,
+  useCallback,
+  useEffect,
   useContext,
   useMemo,
   useRef,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Goal } from "@/lib/goals";
 import {
   flattenActivities,
@@ -16,31 +20,36 @@ import {
   validActivities,
   type GoalActivity,
 } from "@/lib/goal-activities";
-import { removeGoalFile } from "@/lib/goal-files";
-import {
-  goalsStorageKey,
-  initialGoals,
-  initialGoalsSnapshot,
-  parseGoals,
-} from "@/lib/goal-storage";
+import { migrateGoalFiles, removeGoalFile } from "@/lib/goal-files";
+import { goalsStorageKey, parseGoals } from "@/lib/goal-storage";
 import NewGoalModal from "./new-goal-modal";
+import { useLanguage } from "@/components/language-provider";
 
 type ActivityUpdate =
   GoalActivity[] | ((current: GoalActivity[]) => GoalActivity[]);
 type GoalFields = Pick<Goal, "name" | "description" | "icon" | "color">;
+type RemoteGoalsSnapshot = { goals: Goal[]; revision: number };
 const GoalsContext = createContext<{
   goals: Goal[];
+  loading: boolean;
   openCreateGoal: () => void;
   updateActivities: (id: string, activities: ActivityUpdate) => void;
-  updateGoal: (id: string, changes: GoalFields) => void;
-  deleteGoal: (id: string) => void;
+  updateGoal: (id: string, changes: GoalFields) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
   deleteBranch: (goalId: string, activityId: string) => string[];
 } | null>(null);
 
-function subscribe(callback: () => void) {
+function subscribeGoals(key: string, callback: () => void) {
   try {
-    if (localStorage.getItem(goalsStorageKey) === null)
-      localStorage.setItem(goalsStorageKey, initialGoalsSnapshot);
+    if (localStorage.getItem(key) === null) {
+      const legacyOwnerKey = `${goalsStorageKey}:legacy-owner`;
+      const owner = localStorage.getItem(legacyOwnerKey);
+      const legacy = localStorage.getItem(goalsStorageKey);
+      if (legacy !== null && (owner === null || owner === key)) {
+        localStorage.setItem(legacyOwnerKey, key);
+        localStorage.setItem(key, legacy);
+      } else localStorage.setItem(key, "[]");
+    }
   } catch {}
   window.addEventListener("storage", callback);
   window.addEventListener("ramify:goals-updated", callback);
@@ -50,19 +59,32 @@ function subscribe(callback: () => void) {
   };
 }
 
-function getSnapshot() {
+function readSnapshot(key: string) {
   try {
-    return localStorage.getItem(goalsStorageKey) ?? initialGoalsSnapshot;
+    return localStorage.getItem(key) ?? "[]";
   } catch {
-    return initialGoalsSnapshot;
+    return "[]";
   }
 }
 
-function storeGoals(goals: Goal[]) {
+function writeGoals(key: string, goals: Goal[]) {
   const snapshot = JSON.stringify(goals);
   parseGoals(snapshot);
-  localStorage.setItem(goalsStorageKey, snapshot);
+  if (localStorage.getItem(key) === snapshot) return;
+  localStorage.setItem(key, snapshot);
   window.dispatchEvent(new Event("ramify:goals-updated"));
+}
+
+async function persistGoal(userId: string, id: string, changes?: GoalFields) {
+  const response = await fetch(`/api/goals/${encodeURIComponent(id)}`, {
+    method: changes ? "PUT" : "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Ramify-User-Id": userId,
+    },
+    body: changes ? JSON.stringify(changes) : undefined,
+  });
+  if (!response.ok) throw new Error("Could not save goal");
 }
 
 function cleanupFiles(removed: GoalActivity[], remaining: Goal[]) {
@@ -93,50 +115,502 @@ export function useGoals() {
   return context;
 }
 
-export default function GoalsProvider({ children }: { children: ReactNode }) {
-  const snapshot = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    () => initialGoalsSnapshot,
+export default function GoalsProvider({
+  children,
+  userId,
+}: {
+  children: ReactNode;
+  userId: string;
+}) {
+  const revision = useRef(0);
+  const storageKey = `${goalsStorageKey}:${userId}`;
+  const queryClient = useQueryClient();
+  const queryKey = useMemo(() => ["goals", userId] as const, [userId]);
+  const [metadataPendingCount, setMetadataPendingCount] = useState(0);
+  const metadataPending = useRef(0);
+  const beginMetadataMutation = useCallback(() => {
+    metadataPending.current++;
+    setMetadataPendingCount((count) => count + 1);
+  }, []);
+  const endMetadataMutation = useCallback(() => {
+    metadataPending.current--;
+    setMetadataPendingCount((count) => count - 1);
+  }, []);
+  const subscribe = useCallback(
+    (callback: () => void) =>
+      subscribeGoals(storageKey, () => {
+        revision.current++;
+        callback();
+      }),
+    [storageKey],
   );
+  const getSnapshot = useCallback(() => readSnapshot(storageKey), [storageKey]);
+  const storeGoals = useCallback(
+    (goals: Goal[]) => writeGoals(storageKey, goals),
+    [storageKey],
+  );
+  const remoteIdsKey = `${storageKey}:synced`;
+  const rememberRemoteGoal = useCallback(
+    (id: string) => {
+      const ids = JSON.parse(
+        localStorage.getItem(remoteIdsKey) ?? "[]",
+      ) as string[];
+      localStorage.setItem(
+        remoteIdsKey,
+        JSON.stringify([...new Set([...ids, id])]),
+      );
+    },
+    [remoteIdsKey],
+  );
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => "[]");
   const goals = useMemo(() => {
     try {
       return parseGoals(snapshot);
     } catch {
-      return initialGoals;
+      return [];
     }
   }, [snapshot]);
   const dialog = useRef<HTMLDialogElement>(null);
+  const creationId = useRef<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [syncErrors, setSyncErrors] = useState<Record<string, number>>({});
+  const [syncAttempt, setSyncAttempt] = useState(0);
+  const inFlight = useRef(new Map<string, Promise<void>>());
+  const deleting = useRef(new Set<string>());
+  const initialized = useRef(false);
+  const active = useRef(true);
+  const { t } = useLanguage();
+  const canRefreshGoals = useCallback(
+    () =>
+      typeof document !== "undefined" &&
+      document.visibilityState === "visible" &&
+      typeof navigator !== "undefined" &&
+      navigator.onLine &&
+      metadataPending.current === 0,
+    [],
+  );
+  const goalsQuery = useQuery({
+    queryKey,
+    queryFn: async ({ signal }): Promise<RemoteGoalsSnapshot> => {
+      const requestRevision = revision.current;
+      const response = await fetch("/api/goals", {
+        headers: { "X-Ramify-User-Id": userId },
+        cache: "no-store",
+        signal,
+      });
+      if (!response.ok) throw new Error("Could not load goals");
+      return {
+        goals: (await response.json()) as Goal[],
+        revision: requestRevision,
+      };
+    },
+    enabled: typeof window !== "undefined" && metadataPendingCount === 0,
+    staleTime: 15_000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    // Refresh is coordinated by the visible/online listeners below.
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
+  });
+  const {
+    data: remoteSnapshot,
+    isError: goalsLoadError,
+    refetch: refetchGoals,
+  } = goalsQuery;
+  const updateRemoteCache = useCallback(
+    (
+      revisionBeforeCommit: number,
+      revisionAfterCommit: number,
+      update: (remote: Goal[]) => Goal[],
+    ) =>
+      queryClient.setQueryData<RemoteGoalsSnapshot>(queryKey, (current) =>
+        current
+          ? {
+              ...current,
+              goals: update(current.goals),
+              revision:
+                current.revision === revisionBeforeCommit
+                  ? revisionAfterCommit
+                  : current.revision,
+            }
+          : current,
+      ),
+    [queryClient, queryKey],
+  );
+  const { mutateAsync: saveRemoteGoal } = useMutation({
+    mutationKey: ["goals", userId, "save"],
+    mutationFn: ({ id, changes }: { id: string; changes: GoalFields }) =>
+      persistGoal(userId, id, changes),
+    networkMode: "always",
+    retry: false,
+  });
+  const { mutateAsync: deleteRemoteGoal } = useMutation({
+    mutationKey: ["goals", userId, "delete"],
+    mutationFn: (id: string) => persistGoal(userId, id),
+    networkMode: "always",
+    retry: false,
+  });
+  const { mutateAsync: saveActivitiesRemote } = useMutation({
+    mutationKey: ["goals", userId, "activities"],
+    mutationFn: async ({
+      id,
+      activities,
+      version,
+      goal,
+    }: {
+      id: string;
+      activities: GoalActivity[];
+      version: number;
+      goal: Goal;
+    }) => {
+      const response = await fetch(
+        `/api/goals/${encodeURIComponent(id)}/activities`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Ramify-User-Id": userId,
+          },
+          body: JSON.stringify({ activities, version, goal }),
+        },
+      );
+      if (!response.ok) {
+        const error = new Error("Could not synchronize diagram") as Error & {
+          status: number;
+        };
+        error.status = response.status;
+        throw error;
+      }
+      return (await response.json()) as { version: number };
+    },
+    networkMode: "always",
+    retry: false,
+  });
+
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+
+  const syncGoal = useCallback(
+    (id: string) => {
+      if (!active.current) return;
+      if (inFlight.current.has(id) || deleting.current.has(id)) return;
+      const source = parseGoals(getSnapshot()).find((goal) => goal.id === id);
+      if (!source?.syncPending) return;
+      const sourceTree = JSON.stringify(source.activities ?? []);
+      const task = (async () => {
+        try {
+          const activities = source.activitiesInitialized
+            ? (source.activities ?? [])
+            : await migrateGoalFiles(source.activities ?? []);
+          if (!active.current || deleting.current.has(id)) return;
+          const { version } = await saveActivitiesRemote({
+            id,
+            activities,
+            version: source.activitiesVersion ?? 0,
+            goal: { ...source, icon: source.icon ?? "flag-fill" },
+          });
+          if (!active.current) return;
+          rememberRemoteGoal(id);
+          const revisionBeforeCommit = revision.current;
+          storeGoals(
+            parseGoals(getSnapshot()).map((goal) => {
+              if (goal.id !== id) return goal;
+              const unchanged =
+                JSON.stringify(goal.activities ?? []) === sourceTree;
+              return {
+                ...goal,
+                activities: unchanged ? activities : goal.activities,
+                activitiesVersion: version,
+                activitiesInitialized:
+                  unchanged || source.activitiesInitialized,
+                syncPending: !unchanged,
+              };
+            }),
+          );
+          const revisionAfterCommit = revision.current;
+          updateRemoteCache(
+            revisionBeforeCommit,
+            revisionAfterCommit,
+            (remote) => {
+              const saved = remote.find((goal) => goal.id === id);
+              const now = Date.now();
+              const synced = {
+                ...(saved ?? {
+                  id,
+                  name: source.name,
+                  description: source.description,
+                  icon: source.icon ?? "flag-fill",
+                  color: source.color,
+                  progress: 0,
+                  tasks: 0,
+                  completedTasks: 0,
+                }),
+                activities,
+                activitiesVersion: version,
+                activitiesInitialized: true,
+                activity: new Date(now).toISOString(),
+                lastActivityAt: now,
+              };
+              return saved
+                ? remote.map((goal) => (goal.id === id ? synced : goal))
+                : [...remote, synced];
+            },
+          );
+          setSyncErrors((errors) => {
+            const next = { ...errors };
+            delete next[id];
+            return next;
+          });
+        } catch (error) {
+          if (!active.current) return;
+          const current = parseGoals(getSnapshot()).find(
+            (goal) => goal.id === id,
+          );
+          if (!current || deleting.current.has(id)) return;
+          if (JSON.stringify(current.activities ?? []) !== sourceTree)
+            setSyncAttempt((attempt) => attempt + 1);
+          else
+            setSyncErrors((errors) => ({
+              ...errors,
+              [id]: (error as { status?: number }).status ?? 500,
+            }));
+        } finally {
+          inFlight.current.delete(id);
+        }
+      })();
+      inFlight.current.set(id, task);
+    },
+    [
+      getSnapshot,
+      rememberRemoteGoal,
+      storeGoals,
+      saveActivitiesRemote,
+      updateRemoteCache,
+    ],
+  );
+
+  useEffect(() => {
+    if (!loaded) return;
+    const timer = setTimeout(() => {
+      for (const goal of goals)
+        if (goal.id && goal.syncPending && !syncErrors[goal.id])
+          syncGoal(goal.id);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [goals, loaded, syncGoal, syncErrors, syncAttempt]);
+
+  useEffect(() => {
+    const data = remoteSnapshot;
+    if (!data) return;
+    if (data.revision !== revision.current || metadataPending.current !== 0) {
+      const retry = setTimeout(() => {
+        if (canRefreshGoals() && !queryClient.isFetching({ queryKey }))
+          void refetchGoals();
+      }, 250);
+      return () => clearTimeout(retry);
+    }
+
+    const current = parseGoals(getSnapshot());
+    const remote = new Map(data.goals.map((goal) => [goal.id, goal]));
+    const known = new Set(
+      JSON.parse(localStorage.getItem(remoteIdsKey) ?? "[]") as string[],
+    );
+    const merged = current
+      .filter(
+        (goal) =>
+          goal.syncPending || !known.has(goal.id!) || remote.has(goal.id!),
+      )
+      .map((goal) => {
+        const saved = remote.get(goal.id!);
+        if (goal.syncPending) return goal;
+        if (!saved && !initialized.current)
+          return { ...goal, syncPending: true };
+        if (!saved) return goal;
+        if (
+          !initialized.current &&
+          !saved.activitiesInitialized &&
+          goal.activities?.length
+        )
+          return {
+            ...goal,
+            ...saved,
+            activities: goal.activities,
+            syncPending: true,
+          };
+        return { ...goal, ...saved, syncPending: false };
+      });
+    for (const goal of data.goals) {
+      if (deleting.current.has(goal.id!)) continue;
+      if (!current.some((item) => item.id === goal.id))
+        merged.push({
+          ...goal,
+          activities: goal.activities ?? [],
+          progress: 0,
+          tasks: 0,
+          completedTasks: 0,
+        });
+    }
+    // Normalize counts before comparing, so unchanged refetches stay silent.
+    const normalized = parseGoals(JSON.stringify(merged));
+    if (JSON.stringify(normalized) !== JSON.stringify(current))
+      storeGoals(normalized);
+    const remoteIds = JSON.stringify([
+      ...new Set([...known, ...data.goals.map((goal) => goal.id)]),
+    ]);
+    if (localStorage.getItem(remoteIdsKey) !== remoteIds)
+      localStorage.setItem(remoteIdsKey, remoteIds);
+    if (!initialized.current) {
+      initialized.current = true;
+      setLoaded(true);
+    }
+    if (data.revision !== revision.current)
+      queryClient.setQueryData<RemoteGoalsSnapshot>(queryKey, (cached) =>
+        cached === data ? { ...cached, revision: revision.current } : cached,
+      );
+  }, [
+    canRefreshGoals,
+    getSnapshot,
+    metadataPendingCount,
+    queryClient,
+    queryKey,
+    remoteIdsKey,
+    refetchGoals,
+    remoteSnapshot,
+    storeGoals,
+  ]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (!canRefreshGoals() || queryClient.isFetching({ queryKey })) return;
+      void refetchGoals();
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [canRefreshGoals, queryClient, queryKey, refetchGoals]);
 
   return (
     <GoalsContext
       value={{
         goals,
-        openCreateGoal: () => dialog.current?.showModal(),
-        updateGoal: (id, changes) => {
+        loading: !loaded,
+        openCreateGoal: () => {
+          creationId.current = null;
+          dialog.current?.showModal();
+        },
+        updateGoal: async (id, changes) => {
           const current = parseGoals(getSnapshot());
           if (!current.some((goal) => goal.id === id))
             throw new Error("Goal not found");
-          storeGoals(
-            current.map((goal) =>
-              goal.id === id
-                ? {
-                    ...goal,
-                    ...changes,
-                    name: changes.name.trim(),
-                    activity: "Ahora",
-                  }
-                : goal,
+          parseGoals(
+            JSON.stringify(
+              current.map((goal) =>
+                goal.id === id ? { ...goal, ...changes } : goal,
+              ),
             ),
           );
+          beginMetadataMutation();
+          let cacheCommit:
+            { before: number; after: number; now: number } | undefined;
+          try {
+            await saveRemoteGoal({ id, changes });
+            if (!active.current) return;
+            rememberRemoteGoal(id);
+            const now = Date.now();
+            const before = revision.current;
+            storeGoals(
+              parseGoals(getSnapshot()).map((goal) =>
+                goal.id === id
+                  ? {
+                      ...goal,
+                      ...changes,
+                      name: changes.name.trim(),
+                      activity: "Ahora",
+                      lastActivityAt: now,
+                    }
+                  : goal,
+              ),
+            );
+            cacheCommit = { before, after: revision.current, now };
+          } finally {
+            endMetadataMutation();
+          }
+          const commit = cacheCommit;
+          if (commit)
+            updateRemoteCache(commit.before, commit.after, (remote) => {
+              const saved = remote.find((goal) => goal.id === id);
+              const updated = {
+                ...(saved ?? {
+                  id,
+                  activities: [],
+                  activitiesVersion: 0,
+                  activitiesInitialized: false,
+                  progress: 0,
+                  tasks: 0,
+                  completedTasks: 0,
+                }),
+                ...changes,
+                id,
+                name: changes.name.trim(),
+                description: changes.description.trim(),
+                activity: new Date(commit.now).toISOString(),
+                lastActivityAt: commit.now,
+              };
+              return saved
+                ? remote.map((goal) => (goal.id === id ? updated : goal))
+                : [...remote, updated];
+            });
         },
-        deleteGoal: (id) => {
-          const current = parseGoals(getSnapshot());
-          const goal = current.find((goal) => goal.id === id);
-          if (!goal) throw new Error("Goal not found");
-          const remaining = current.filter((goal) => goal.id !== id);
-          storeGoals(remaining);
-          cleanupFiles(goal.activities ?? [], remaining);
+        deleteGoal: async (id) => {
+          beginMetadataMutation();
+          deleting.current.add(id);
+          let deletedRemotely = false;
+          let cacheCommit: { before: number; after: number } | undefined;
+          try {
+            try {
+              await inFlight.current.get(id);
+              if (!active.current) return;
+              await deleteRemoteGoal(id);
+              deletedRemotely = true;
+            } catch (error) {
+              deleting.current.delete(id);
+              setSyncAttempt((attempt) => attempt + 1);
+              throw error;
+            }
+            if (!active.current) return;
+            rememberRemoteGoal(id);
+            const current = parseGoals(getSnapshot());
+            const goal = current.find((goal) => goal.id === id);
+            if (!goal) throw new Error("Goal not found");
+            const remaining = current.filter((goal) => goal.id !== id);
+            const before = revision.current;
+            storeGoals(remaining);
+            cacheCommit = { before, after: revision.current };
+            setSyncErrors((errors) => {
+              const next = { ...errors };
+              delete next[id];
+              return next;
+            });
+            cleanupFiles(goal.activities ?? [], remaining);
+          } finally {
+            endMetadataMutation();
+            if (deletedRemotely)
+              updateRemoteCache(
+                cacheCommit?.before ?? revision.current,
+                cacheCommit?.after ?? revision.current,
+                (remote) => remote.filter((goal) => goal.id !== id),
+              );
+          }
         },
         deleteBranch: (goalId, activityId) => {
           const current = parseGoals(getSnapshot());
@@ -150,11 +624,20 @@ export default function GoalsProvider({ children }: { children: ReactNode }) {
               ? {
                   ...item,
                   activities: removeActivity(item.activities ?? [], activityId),
+                  syncPending: true,
                   activity: "Ahora",
+                  lastActivityAt: Date.now(),
                 }
               : item,
           );
+          const before = revision.current;
           storeGoals(remaining);
+          updateRemoteCache(before, revision.current, (remote) => remote);
+          setSyncErrors((errors) => {
+            const next = { ...errors };
+            delete next[goalId];
+            return next;
+          });
           cleanupFiles([branch], remaining);
           return flattenActivities([branch]).map((activity) => activity.id);
         },
@@ -167,32 +650,155 @@ export default function GoalsProvider({ children }: { children: ReactNode }) {
               ? activities(goal.activities ?? [])
               : activities;
           if (!validActivities(next)) throw new Error("Invalid activities");
+          const before = revision.current;
           storeGoals(
             current.map((goal) =>
               goal.id === id
-                ? { ...goal, activities: next, activity: "Ahora" }
+                ? {
+                    ...goal,
+                    activities: next,
+                    activity: "Ahora",
+                    lastActivityAt: Date.now(),
+                    syncPending: true,
+                  }
                 : goal,
             ),
           );
+          updateRemoteCache(before, revision.current, (remote) => remote);
+          setSyncErrors((errors) => {
+            const next = { ...errors };
+            delete next[id];
+            return next;
+          });
         },
       }}
     >
+      {goalsLoadError && (
+        <p role="alert" className="bg-black px-5 py-2 text-xs text-red-300">
+          {t("No se pudieron cargar las metas de Turso.")}{" "}
+          <button
+            type="button"
+            className="underline"
+            onClick={() => void refetchGoals()}
+          >
+            {t("Reintentar")}
+          </button>
+        </p>
+      )}
       {children}
+      {goals.some((goal) => goal.syncPending) && (
+        <div
+          role={Object.keys(syncErrors).length ? "alert" : "status"}
+          className="fixed bottom-[calc(124px+env(safe-area-inset-bottom))] left-20 right-3 z-50 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-300 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[calc(100vw-32px)]"
+        >
+          {Object.keys(syncErrors).length
+            ? t(
+                "Cambios pendientes en este navegador. No se pudieron guardar en Turso.",
+              )
+            : t("Guardando cambios en Turso…")}
+          {!!Object.keys(syncErrors).length && (
+            <button
+              type="button"
+              className="ml-2 underline"
+              onClick={async () => {
+                const conflicts = Object.entries(syncErrors).filter(
+                  ([, status]) => status === 409,
+                );
+                if (conflicts.length) {
+                  if (
+                    !window.confirm(
+                      t(
+                        "Otra sesión modificó el diagrama. ¿Reemplazar su versión con tus cambios locales?",
+                      ),
+                    )
+                  )
+                    return;
+                  try {
+                    const { data, error } = await refetchGoals();
+                    if (error || !data)
+                      throw new Error("Could not load version");
+                    if (!active.current) return;
+                    const before = revision.current;
+                    storeGoals(
+                      parseGoals(getSnapshot()).map((goal) =>
+                        conflicts.some(([id]) => id === goal.id)
+                          ? {
+                              ...goal,
+                              activitiesVersion:
+                                data.goals.find((item) => item.id === goal.id)
+                                  ?.activitiesVersion ?? goal.activitiesVersion,
+                            }
+                          : goal,
+                      ),
+                    );
+                    updateRemoteCache(
+                      before,
+                      revision.current,
+                      (remote) => remote,
+                    );
+                  } catch {
+                    return;
+                  }
+                }
+                setSyncErrors({});
+                setSyncAttempt((attempt) => attempt + 1);
+              }}
+            >
+              {t("Reintentar")}
+            </button>
+          )}
+        </div>
+      )}
       <NewGoalModal
         dialogRef={dialog}
-        onCreate={(goal) => {
-          const current = parseGoals(getSnapshot());
-          storeGoals([
-            ...current,
-            {
-              ...goal,
-              id: crypto.randomUUID(),
-              progress: 0,
-              tasks: 0,
-              completedTasks: 0,
-              activity: "Ahora",
-            },
-          ]);
+        onCreate={async (goal) => {
+          const id = (creationId.current ??= crypto.randomUUID());
+          beginMetadataMutation();
+          let cacheCommit:
+            { before: number; after: number; now: number } | undefined;
+          try {
+            await saveRemoteGoal({ id, changes: goal });
+            if (!active.current) return;
+            rememberRemoteGoal(id);
+            const current = parseGoals(getSnapshot());
+            const now = Date.now();
+            const before = revision.current;
+            storeGoals([
+              ...current,
+              {
+                ...goal,
+                id,
+                progress: 0,
+                tasks: 0,
+                completedTasks: 0,
+                activity: "Ahora",
+                lastActivityAt: now,
+              },
+            ]);
+            cacheCommit = { before, after: revision.current, now };
+            creationId.current = null;
+          } finally {
+            endMetadataMutation();
+          }
+          const commit = cacheCommit;
+          if (commit)
+            updateRemoteCache(commit.before, commit.after, (remote) => {
+              const created = {
+                ...goal,
+                id,
+                activities: [],
+                activitiesVersion: 0,
+                activitiesInitialized: false,
+                progress: 0,
+                tasks: 0,
+                completedTasks: 0,
+                activity: new Date(commit.now).toISOString(),
+                lastActivityAt: commit.now,
+              };
+              return remote.some((item) => item.id === id)
+                ? remote.map((item) => (item.id === id ? created : item))
+                : [...remote, created];
+            });
         }}
       />
     </GoalsContext>

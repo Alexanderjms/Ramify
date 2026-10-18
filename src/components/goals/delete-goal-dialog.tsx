@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type RefObject } from "react";
+import { useId, useRef, useState, type RefObject } from "react";
 import { useLanguage } from "@/components/language-provider";
 import "./new-goal-modal.css";
 
@@ -12,13 +12,15 @@ export default function DeleteGoalDialog({
 }: {
   dialogRef: RefObject<HTMLDialogElement | null>;
   name: string;
-  onDelete: () => void;
+  onDelete: () => void | Promise<void>;
   branch?: boolean;
 }) {
   const { t } = useLanguage();
   const titleId = useId();
   const descriptionId = useId();
   const [error, setError] = useState(false);
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
   return (
     <dialog
@@ -26,12 +28,17 @@ export default function DeleteGoalDialog({
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
       onClose={() => setError(false)}
-      className="new-goal-modal app-scrollbar dashboard-motion fixed m-auto max-h-[calc(100svh-32px)] w-[calc(100%-32px)] max-w-[420px] overflow-y-auto rounded-lg border border-zinc-800 bg-black p-6 text-white [color-scheme:dark] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-white"
+      onCancel={(event) => {
+        if (submitting.current) event.preventDefault();
+      }}
+      className="new-goal-modal app-scrollbar dashboard-motion fixed m-auto max-h-[calc(100dvh-32px)] w-[calc(100%-32px)] max-w-[420px] overflow-y-auto overscroll-contain rounded-lg border border-zinc-800 bg-black p-4 text-white [color-scheme:dark] sm:p-6 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-white"
     >
       <h2 id={titleId} className="text-lg font-semibold">
         {t(branch ? "Eliminar rama" : "Eliminar meta")}
       </h2>
-      <p className="mt-3 break-words text-sm font-medium">{name}</p>
+      <p className="mt-3 text-sm font-medium [overflow-wrap:anywhere]">
+        {name}
+      </p>
       <p id={descriptionId} className="mt-2 text-xs leading-5 text-zinc-400">
         {t(
           branch
@@ -49,19 +56,28 @@ export default function DeleteGoalDialog({
         </p>
       )}
       <form
-        className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-5"
-        onSubmit={(event) => {
+        aria-busy={pending}
+        className="mt-6 flex flex-wrap justify-end gap-2 border-t border-zinc-800 pt-5 [&>button]:min-h-11 sm:[&>button]:min-h-0"
+        onSubmit={async (event) => {
           event.preventDefault();
+          if (submitting.current) return;
+          submitting.current = true;
+          setPending(true);
+          setError(false);
           try {
-            onDelete();
+            await onDelete();
             dialogRef.current?.close();
           } catch {
             setError(true);
+          } finally {
+            submitting.current = false;
+            setPending(false);
           }
         }}
       >
         <button
           type="button"
+          disabled={pending}
           autoFocus
           onClick={() => dialogRef.current?.close()}
           className="cursor-pointer rounded border border-zinc-800 px-3 py-2 text-xs hover:bg-zinc-900"
@@ -70,9 +86,16 @@ export default function DeleteGoalDialog({
         </button>
         <button
           type="submit"
+          disabled={pending}
           className="cursor-pointer rounded border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 hover:bg-red-500/20"
         >
-          {t(branch ? "Eliminar rama" : "Eliminar meta")}
+          {t(
+            pending
+              ? "Eliminando…"
+              : branch
+                ? "Eliminar rama"
+                : "Eliminar meta",
+          )}
         </button>
       </form>
     </dialog>

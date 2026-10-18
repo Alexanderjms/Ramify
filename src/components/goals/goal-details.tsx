@@ -16,6 +16,7 @@ import {
 import { useGoals } from "./goals-provider";
 import GoalDiagram from "./goal-diagram";
 import BranchDetails from "./branch-details";
+import { GoalDiagramSkeleton } from "./goal-loading-skeleton";
 import { useLanguage } from "@/components/language-provider";
 import "./goal-details.css";
 
@@ -26,8 +27,14 @@ export default function GoalDetails({
   id: string;
   initialView: GoalView;
 }) {
-  const { goals, updateActivities, updateGoal, deleteGoal, deleteBranch } =
-    useGoals();
+  const {
+    goals,
+    loading,
+    updateActivities,
+    updateGoal,
+    deleteGoal,
+    deleteBranch,
+  } = useGoals();
   const router = useRouter();
   const editDialog = useRef<HTMLDialogElement>(null);
   const deleteDialog = useRef<HTMLDialogElement>(null);
@@ -35,10 +42,17 @@ export default function GoalDetails({
   const [deletingBranchId, setDeletingBranchId] = useState<string | null>(null);
   const { t } = useLanguage();
   const goal = goals.find((goal) => goal.id === id);
-  const { view, setView, updateScroll, saveError, retrySave } = useGoalView(
-    id,
-    initialView,
-  );
+  const {
+    view,
+    setView,
+    updateScroll,
+    saveError,
+    retrySave,
+    loadError,
+    retryLoad,
+    pauseSaving,
+    resumeSaving,
+  } = useGoalView(id, initialView);
   const collapsed = useMemo(() => new Set(view.collapsed), [view.collapsed]);
   function setCollapsed(
     value: Set<string> | ((previous: Set<string>) => Set<string>),
@@ -132,6 +146,7 @@ export default function GoalDetails({
     });
   }
 
+  if (!goal && loading) return <GoalDiagramSkeleton />;
   if (!goal)
     return (
       <div className="p-8">
@@ -150,6 +165,18 @@ export default function GoalDetails({
         <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
           {t("No se pudo guardar la vista en Turso.")}{" "}
           <button type="button" onClick={retrySave} className="underline">
+            {t("Reintentar")}
+          </button>
+        </p>
+      )}
+      {loadError && (
+        <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
+          {t("No se pudo cargar la vista en Turso.")}{" "}
+          <button
+            type="button"
+            onClick={() => void retryLoad()}
+            className="underline"
+          >
             {t("Reintentar")}
           </button>
         </p>
@@ -221,8 +248,14 @@ export default function GoalDetails({
       <DeleteGoalDialog
         dialogRef={deleteDialog}
         name={goal.name}
-        onDelete={() => {
-          deleteGoal(id);
+        onDelete={async () => {
+          await pauseSaving();
+          try {
+            await deleteGoal(id);
+          } catch (error) {
+            resumeSaving();
+            throw error;
+          }
           router.replace("/metas");
         }}
       />

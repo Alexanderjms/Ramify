@@ -181,7 +181,8 @@ export function validActivities(
       if (item.targetDate !== undefined && item.targetDate !== "") {
         if (
           typeof item.targetDate !== "string" ||
-          !/^\d{4}-\d{2}-\d{2}$/.test(item.targetDate)
+          !/^\d{4}-\d{2}-\d{2}$/.test(item.targetDate) ||
+          item.targetDate.startsWith("0000-")
         )
           return false;
         const date = new Date(`${item.targetDate}T00:00:00Z`);

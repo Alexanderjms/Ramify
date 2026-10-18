@@ -58,7 +58,7 @@ export default function BranchResourceField({
                     await downloadGoalFile(resource.url, resource.fileName!);
                   } catch {
                     setError(
-                      "No se pudo descargar el archivo. Comprueba que sigue guardado en este navegador.",
+                      "No se pudo descargar el archivo. Comprueba tu conexión e inténtalo de nuevo.",
                     );
                   }
                 }}
@@ -85,7 +85,7 @@ export default function BranchResourceField({
                       await removeGoalFile(resource.url);
                     } catch {
                       setError(
-                        "Se quitó el recurso, pero no se pudo liberar el archivo local.",
+                        "Se quitó el recurso, pero no se pudo liberar el archivo. Se reintentará al sincronizar.",
                       );
                     }
                   }
@@ -171,14 +171,12 @@ export default function BranchResourceField({
           <TooltipButton
             type="button"
             className="branch-add-resource"
-            title={t(
-              "Adjuntar archivo (máximo 20 MB, guardado en este navegador)",
-            )}
+            title={t("Adjuntar archivo (máximo 20 MB, guardado en Turso)")}
             disabled={readingFile || (activity.resources?.length ?? 0) >= 50}
             onClick={() => fileInput.current?.click()}
           >
             <i aria-hidden="true" className="bi bi-paperclip" />
-            {t(readingFile ? "Leyendo…" : "Adjuntar archivo")}
+            {t(readingFile ? "Subiendo…" : "Adjuntar archivo")}
           </TooltipButton>
         </div>
       )}
@@ -211,7 +209,7 @@ export default function BranchResourceField({
             if (!saved) await removeGoalFile(url);
           } catch {
             setError(
-              "No se pudo guardar el archivo. Comprueba el espacio disponible en este navegador.",
+              "No se pudo subir el archivo. Comprueba tu conexión e inténtalo de nuevo.",
             );
           } finally {
             setReadingFile(false);

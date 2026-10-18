@@ -7,18 +7,61 @@
 }
 
 .dashboard-sidebar {
-  transition: width 280ms ease;
+  transition: width 220ms var(--ease-out);
 }
 
-.sidebar-goals > nav {
+.dashboard-breadcrumb {
+  padding-left: 0;
+  transition: padding-left 220ms var(--ease-out);
+}
+
+.dashboard-breadcrumb[data-sidebar-collapsed="true"] {
+  padding-left: 20px;
+}
+
+.dashboard-sidebar .sidebar-label {
+  transition: opacity 160ms var(--ease-out);
+}
+
+.dashboard-sidebar[data-collapsed="true"] .sidebar-label {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dashboard-motion .dashboard-sidebar .sidebar-toggle {
+  left: calc(100% - 48px);
+  transform: translateX(0);
+  transition: transform 220ms var(--ease-out);
+}
+
+.dashboard-sidebar[data-collapsed="true"] .sidebar-toggle {
+  transform: translateX(56px);
+}
+
+.sidebar-goals-content {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms var(--ease-out);
+}
+
+.sidebar-goals-content[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+.sidebar-goals-clip {
+  min-height: 0;
+  overflow: hidden;
   opacity: 0;
   transform: translateX(-10px);
   transition:
-    opacity 280ms ease,
-    transform 280ms ease;
+    opacity 220ms var(--ease-out),
+    transform 220ms var(--ease-out);
 }
 
-.sidebar-goals[open] > nav {
+.sidebar-goals-clip > nav {
+  width: 201px;
+}
+
+.sidebar-goals-content[data-open="true"] > .sidebar-goals-clip {
   opacity: 1;
   transform: translateX(0);
 }
@@ -101,7 +144,7 @@
     color 160ms ease;
 }
 
-.dashboard-motion button.paint-hover:enabled:active {
+.dashboard-motion button.paint-hover:not(.sidebar-toggle):enabled:active {
   transform: scale(0.97);
 }
 
@@ -191,19 +234,27 @@
 .dashboard-motion[data-motion="instant"] *,
 .dashboard-motion[data-motion="instant"] *::before,
 .dashboard-motion[data-motion="instant"] *::after,
-.dashboard-motion[data-motion="instant"] .sidebar-goals::details-content {
+.dashboard-motion[data-motion="instant"] .sidebar-goals-content,
+.dashboard-motion[data-motion="instant"] .sidebar-goals-clip {
   transition-duration: 0ms !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dashboard-motion .sidebar-toggle {
+    transform: translateX(0) !important;
+  }
+  .dashboard-motion .dashboard-sidebar[data-collapsed="true"] .sidebar-toggle {
+    transform: translateX(56px) !important;
+  }
   ::view-transition-old(goals-view),
   ::view-transition-new(goals-view) {
     animation: none;
   }
   .dashboard-motion .paint-hover,
   .dashboard-sidebar,
-  .sidebar-goals::details-content,
-  .sidebar-goals > nav,
+  .dashboard-breadcrumb,
+  .sidebar-goals-content,
+  .sidebar-goals-clip,
   .dashboard-motion :where(button, a, summary),
   .dashboard-motion :where(input, textarea),
   .dashboard-motion [aria-pressed],

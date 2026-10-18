@@ -87,8 +87,8 @@
   }
 }
 .goal-canvas {
-  height: calc(100svh - 56px);
-  min-height: 420px;
+  height: calc(100dvh - 56px - env(safe-area-inset-top));
+  min-height: min(420px, calc(100dvh - 56px - env(safe-area-inset-top)));
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -182,7 +182,7 @@
 .goal-create-action {
   position: absolute;
   top: 16px;
-  right: 64px;
+  right: max(64px, env(safe-area-inset-right));
   z-index: 1;
 }
 @media (max-width: 600px) {
@@ -344,9 +344,10 @@
 }
 .goal-canvas-tools {
   position: absolute;
-  right: 24px;
-  bottom: 20px;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
   display: flex;
+  max-width: calc(100% - 24px);
   padding: 5px;
   border: 1px solid #27272a;
   border-radius: 5px;
@@ -377,12 +378,34 @@
     right: 12px;
   }
   .goal-canvas-tools {
-    right: 12px;
-    bottom: 12px;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
   }
   .goal-canvas-tools button {
     min-width: 32px;
     min-height: 36px;
+  }
+}
+
+@media (max-width: 380px) {
+  .goal-canvas-tools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: calc(100% - 24px);
+  }
+  .goal-canvas-tools button {
+    min-height: 44px;
+  }
+  .goal-create-action {
+    right: 52px;
+  }
+  .goal-create-action .goal-add-branch {
+    gap: 5px;
+    padding-inline: 7px;
+    font-size: 11px;
+  }
+  .goal-settings-button {
+    right: 10px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

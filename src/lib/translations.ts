@@ -1,4 +1,10 @@
 export const english: Record<string, string> = {
+  "No se pudo guardar la meta. Inténtalo de nuevo; el formulario se ha conservado.":
+    "Could not save the goal. Please try again; your form has been preserved.",
+  "No se pudieron cargar las metas de Turso.":
+    "Could not load goals from Turso.",
+  "Guardando…": "Saving…",
+  "Eliminando…": "Deleting…",
   "Opciones de la rama": "Branch options",
   "Opciones del diagrama": "Diagram options",
   Editar: "Edit",
@@ -92,6 +98,12 @@ export const english: Record<string, string> = {
   "Contraer barra lateral": "Collapse sidebar",
   "Navegación principal": "Main navigation",
   "Metas del sidebar": "Sidebar goals",
+  "Cargando metas…": "Loading goals…",
+  "Cargando meta…": "Loading goal…",
+  "Cargando Ramify…": "Loading Ramify…",
+  "Cargando inicio de sesión…": "Loading sign-in…",
+  "Mostrar metas": "Show goals",
+  "Ocultar metas": "Hide goals",
   "No hay metas creadas": "No goals yet",
   "Ruta de navegación": "Breadcrumb",
   "Progreso de la meta": "Goal progress",
@@ -264,6 +276,22 @@ export const english: Record<string, string> = {
   Octubre: "October",
   Noviembre: "November",
   Diciembre: "December",
+  "Guardando cambios en Turso…": "Saving changes to Turso…",
+  "No se pudieron sincronizar tus preferencias. Se reintentará automáticamente.":
+    "Your preferences could not be synced. Retrying automatically.",
+  "Cambios pendientes en este navegador. No se pudieron guardar en Turso.":
+    "Changes are pending in this browser. They could not be saved to Turso.",
+  "Otra sesión modificó el diagrama. ¿Reemplazar su versión con tus cambios locales?":
+    "Another session changed the diagram. Replace its version with your local changes?",
+  "No se pudo descargar el archivo. Comprueba tu conexión e inténtalo de nuevo.":
+    "Could not download the file. Check your connection and try again.",
+  "Se quitó el recurso, pero no se pudo liberar el archivo. Se reintentará al sincronizar.":
+    "The resource was removed, but its file could not be deleted. Synchronization will retry.",
+  "Adjuntar archivo (máximo 20 MB, guardado en Turso)":
+    "Attach file (maximum 20 MB, stored in Turso)",
+  "Subiendo…": "Uploading…",
+  "No se pudo subir el archivo. Comprueba tu conexión e inténtalo de nuevo.":
+    "Could not upload the file. Check your connection and try again.",
   "Iniciar sesión": "Sign in",
   "Sesión iniciada": "Signed in",
   "Accede a Ramify con tu cuenta de GitHub.":

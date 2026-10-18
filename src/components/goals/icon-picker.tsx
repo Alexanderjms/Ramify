@@ -130,7 +130,7 @@ export default function IconPicker({
           )
             event.currentTarget.close();
         }}
-        className="new-goal-modal icon-picker-modal app-scrollbar fixed m-auto max-h-[calc(100svh-32px)] w-[calc(100%-32px)] max-w-[500px] overflow-y-auto rounded-lg border border-zinc-800 bg-black p-6 text-white [color-scheme:dark] sm:p-7"
+        className="new-goal-modal icon-picker-modal app-scrollbar fixed m-auto max-h-[calc(100svh-24px)] w-[calc(100%-24px)] max-w-[500px] overflow-x-hidden overflow-y-auto rounded-lg border border-zinc-800 bg-black p-4 text-white [color-scheme:dark] sm:max-h-[calc(100svh-32px)] sm:w-[calc(100%-32px)] sm:p-7"
       >
         <div className="mb-5 flex items-center justify-between gap-4">
           <h2

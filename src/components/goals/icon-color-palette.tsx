@@ -33,7 +33,7 @@ export default function IconColorPalette({
         aria-label={t("Colores anteriores")}
         disabled={colorPage === 0}
         onClick={(event) => onPageChange(-1, event)}
-        className="paint-hover flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25 sm:size-7"
+        className="paint-hover flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25"
       >
         <PaintHover>
           <Icon name="chevron" className="size-3 rotate-180" />
@@ -56,7 +56,7 @@ export default function IconColorPalette({
               title={t(label)}
               aria-pressed={color === value}
               onClick={() => onColorChange(value)}
-              className={`paint-hover flex aspect-square w-full min-w-0 max-w-7 cursor-pointer items-center justify-center rounded border ${color === value ? "border-zinc-500 bg-zinc-800" : "border-transparent"}`}
+              className={`paint-hover flex aspect-square w-full min-w-0 max-w-8 cursor-pointer items-center justify-center rounded border ${color === value ? "border-zinc-500 bg-zinc-800" : "border-transparent"}`}
             >
               <span
                 className="flex size-4 max-w-full items-center justify-center rounded-full sm:size-5"
@@ -77,7 +77,7 @@ export default function IconColorPalette({
         aria-label={t("Colores siguientes")}
         disabled={colorPage === colorPages - 1}
         onClick={(event) => onPageChange(1, event)}
-        className="paint-hover flex size-5 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25 sm:size-7"
+        className="paint-hover flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-400 disabled:cursor-default disabled:opacity-25"
       >
         <PaintHover>
           <Icon name="chevron" className="size-3" />

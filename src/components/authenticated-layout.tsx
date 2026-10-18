@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { auth } from "@/auth";
 import AuthSessionProvider from "./auth-session-provider";
+import DashboardLoadingSkeleton from "@/components/dashboard/loading-skeleton";
 
 async function AuthenticatedContent({ children }: { children: ReactNode }) {
   await connection();
@@ -19,9 +20,7 @@ export default function AuthenticatedLayout({
   children: ReactNode;
 }) {
   return (
-    <Suspense
-      fallback={<main className="min-h-svh bg-black" aria-busy="true" />}
-    >
+    <Suspense fallback={<DashboardLoadingSkeleton />}>
       <AuthenticatedContent>{children}</AuthenticatedContent>
     </Suspense>
   );

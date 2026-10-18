@@ -10,9 +10,11 @@ import NewGoalButton from "@/components/dashboard/new-goal-button";
 import GoalsTable from "./goals-table";
 import type { Goal } from "@/lib/goals";
 import EmptyGoals from "./empty-goals";
+import { GoalCardSkeleton, GoalTableSkeleton } from "./goal-loading-skeleton";
 import { useGoals } from "./goals-provider";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
+import { useUserPreferences } from "@/components/user-preferences-provider";
 
 const statuses = [
   "Todas",
@@ -34,12 +36,12 @@ const normalize = (text: string) =>
     .toLocaleLowerCase("es");
 
 export default function GoalsView() {
-  const { goals: allGoals } = useGoals();
+  const { goals: allGoals, loading } = useGoals();
+  const loadingGoals = loading && allGoals.length === 0;
   const { t, language } = useLanguage();
+  const { preferences, updatePreferences } = useUserPreferences();
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<Status>("Todas");
-  const [sort, setSort] = useState("activity");
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const { goalStatus: status, goalSort: sort, goalView: view } = preferences;
   const viewTransition = useRef<ViewTransition | null>(null);
 
   function changeView(
@@ -53,11 +55,11 @@ export default function GoalsView() {
       event.detail === 0 ||
       matchMedia("(prefers-reduced-motion: reduce)").matches
     ) {
-      setView(mode);
+      updatePreferences({ goalView: mode });
       return;
     }
     viewTransition.current = document.startViewTransition(() =>
-      flushSync(() => setView(mode)),
+      flushSync(() => updatePreferences({ goalView: mode })),
     );
   }
 
@@ -70,6 +72,8 @@ export default function GoalsView() {
   );
   if (sort === "name")
     goals.sort((a, b) => a.name.localeCompare(b.name, language));
+  if (sort === "activity")
+    goals.sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0));
   if (sort === "progress") goals.sort((a, b) => b.progress - a.progress);
   if (sort === "least-progress") goals.sort((a, b) => a.progress - b.progress);
 
@@ -87,7 +91,7 @@ export default function GoalsView() {
         <NewGoalButton />
       </div>
 
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <label className="flex min-h-9 w-full items-center gap-2 rounded border border-zinc-800 px-2.5 focus-within:border-zinc-500 sm:w-[270px]">
           <Icon name="search" className="size-3.5 text-zinc-400" />
           <input
@@ -103,7 +107,9 @@ export default function GoalsView() {
         <Select
           label="Ordenar metas"
           value={sort}
-          onChange={setSort}
+          onChange={(value) =>
+            updatePreferences({ goalSort: value as typeof sort })
+          }
           options={[
             { value: "activity", label: "Última actividad" },
             { value: "name", label: "Nombre" },
@@ -115,7 +121,7 @@ export default function GoalsView() {
         <div
           role="group"
           aria-label={t("Vista de metas")}
-          className="flex items-center gap-1 rounded border border-zinc-800 p-1"
+          className="ml-auto flex shrink-0 items-center gap-1 rounded border border-zinc-800 p-1"
         >
           {(["grid", "list"] as const).map((mode) => (
             <TooltipButton
@@ -146,14 +152,21 @@ export default function GoalsView() {
             key={item}
             type="button"
             aria-pressed={status === item}
-            onClick={() => setStatus(item)}
+            onClick={() => updatePreferences({ goalStatus: item })}
             className={`paint-hover flex min-h-9 cursor-pointer items-center rounded border px-3 py-2 text-xs ${status === item ? "border-zinc-700 bg-zinc-900 text-white" : "border-transparent text-zinc-400"}`}
           >
             <PaintHover>
               {t(item)}{" "}
-              {item === "Todas"
-                ? allGoals.length
-                : allGoals.filter((goal) => statusOf(goal) === item).length}
+              {loadingGoals ? (
+                <span
+                  aria-hidden="true"
+                  className="ml-1 inline-block h-3 w-4 animate-pulse rounded bg-zinc-800/70 motion-reduce:animate-none align-middle"
+                />
+              ) : item === "Todas" ? (
+                allGoals.length
+              ) : (
+                allGoals.filter((goal) => statusOf(goal) === item).length
+              )}
             </PaintHover>
           </button>
         ))}
@@ -161,9 +174,23 @@ export default function GoalsView() {
 
       <section
         aria-label={t("Metas")}
+        aria-busy={loadingGoals}
         className={`goals-results ${view === "grid" ? "grid grid-cols-1 gap-4 lg:grid-cols-3" : "min-w-0"}`}
       >
-        {allGoals.length === 0 ? (
+        {loadingGoals ? (
+          view === "grid" ? (
+            <>
+              <span role="status" className="sr-only">
+                {t("Cargando metas…")}
+              </span>
+              {[0, 1, 2].map((item) => (
+                <GoalCardSkeleton key={item} />
+              ))}
+            </>
+          ) : (
+            <GoalTableSkeleton />
+          )
+        ) : allGoals.length === 0 ? (
           <EmptyGoals />
         ) : view === "grid" ? (
           goals.map((goal) => (

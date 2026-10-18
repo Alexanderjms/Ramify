@@ -532,7 +532,11 @@ export const WarmTooltipGroup = forwardRef<
             <motion.span
               popover="manual"
               ref={(element) => {
-                element?.showPopover();
+                // Focus can open a tooltip while its parent popover is still opening.
+                requestAnimationFrame(() => {
+                  if (element?.isConnected && !element.matches(":popover-open"))
+                    element.showPopover();
+                });
               }}
               id={id}
               role="tooltip"

@@ -17,7 +17,7 @@ export default function NewGoalModal({
   dialogRef: RefObject<HTMLDialogElement | null>;
   onCreate: (
     goal: Pick<Goal, "name" | "description" | "icon" | "color">,
-  ) => void;
+  ) => void | Promise<void>;
   initialGoal?: Pick<Goal, "name" | "description" | "icon" | "color">;
 }) {
   const form = useRef<HTMLFormElement>(null);
@@ -28,6 +28,8 @@ export default function NewGoalModal({
   const [color, setColor] = useState(initialGoal?.color ?? "#FFFFFF");
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
   return (
     <dialog
@@ -47,8 +49,11 @@ export default function NewGoalModal({
         setError("");
         setFormKey((key) => key + 1);
       }}
+      onCancel={(event) => {
+        if (submitting.current) event.preventDefault();
+      }}
       onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
+        if (event.target !== event.currentTarget || submitting.current) return;
         const bounds = event.currentTarget.getBoundingClientRect();
         if (
           event.clientX < bounds.left ||
@@ -58,7 +63,7 @@ export default function NewGoalModal({
         )
           event.currentTarget.close();
       }}
-      className="new-goal-modal app-scrollbar dashboard-motion fixed m-auto max-h-[calc(100svh-32px)] w-[calc(100%-32px)] max-w-[500px] overflow-y-auto rounded-lg border border-zinc-800 bg-black p-6 text-white [color-scheme:dark] sm:p-7 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-white"
+      className="new-goal-modal app-scrollbar dashboard-motion fixed m-auto max-h-[calc(100svh-24px)] w-[calc(100%-24px)] max-w-[500px] overflow-x-hidden overflow-y-auto rounded-lg border border-zinc-800 bg-black p-4 text-white [color-scheme:dark] sm:max-h-[calc(100svh-32px)] sm:w-[calc(100%-32px)] sm:p-7 [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-2 [&_button]:focus-visible:outline-white"
     >
       <div className="flex items-center justify-between gap-4">
         <h2 id={titleId} className="text-xl font-semibold tracking-[-0.4px]">
@@ -66,6 +71,7 @@ export default function NewGoalModal({
         </h2>
         <TooltipButton
           type="button"
+          disabled={pending}
           aria-label={t("Cerrar")}
           onClick={() => dialogRef.current?.close()}
           className="paint-hover flex cursor-pointer rounded p-1 text-zinc-400"
@@ -86,10 +92,12 @@ export default function NewGoalModal({
         )}
       </p>
       <form
+        aria-busy={pending}
         ref={form}
         key={formKey}
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
+          if (submitting.current) return;
           const nameInput = event.currentTarget.elements.namedItem(
             "name",
           ) as HTMLInputElement;
@@ -99,8 +107,11 @@ export default function NewGoalModal({
             return;
           }
           const data = new FormData(event.currentTarget);
+          submitting.current = true;
+          setPending(true);
+          setError("");
           try {
-            onCreate({
+            await onCreate({
               name: nameInput.value.trim(),
               description: String(data.get("description") ?? "").trim(),
               icon,
@@ -109,68 +120,81 @@ export default function NewGoalModal({
             dialogRef.current?.close();
           } catch {
             setError(
-              "No se pudo guardar la meta en este navegador. El formulario se ha conservado.",
+              "No se pudo guardar la meta. Inténtalo de nuevo; el formulario se ha conservado.",
             );
+          } finally {
+            submitting.current = false;
+            setPending(false);
           }
         }}
         className="flex flex-col gap-5"
       >
-        <label className="flex flex-col gap-2 text-xs">
-          {t("Nombre de la meta")}
-          <input
-            name="name"
-            defaultValue={initialGoal?.name ?? ""}
-            required
-            maxLength={100}
-            autoFocus
-            placeholder={t("Ej. Aprender inglés")}
-            onInput={(event) => event.currentTarget.setCustomValidity("")}
-            className="min-h-10 rounded border border-zinc-800 bg-black px-3 text-[13px] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
-          />
-        </label>
-        <label className="flex flex-col gap-2 text-xs">
-          {t("Descripción (opcional)")}
-          <textarea
-            name="description"
-            defaultValue={initialGoal?.description ?? ""}
-            maxLength={1000}
-            rows={3}
-            placeholder={t("Describe la meta")}
-            className="min-h-24 resize-y rounded border border-zinc-800 bg-black px-3 py-2.5 text-[13px] leading-5 outline-none placeholder:text-zinc-500 focus:border-zinc-500"
-          />
-        </label>
-        <div className="flex flex-col gap-2">
-          <span className="text-xs">{t("Icono")}</span>
-          <IconPicker
-            icon={icon}
-            color={color}
-            onIconChange={setIcon}
-            onColorChange={setColor}
-          />
-        </div>
-        {error && (
-          <p role="alert" className="text-xs leading-5 text-red-400">
-            {t(error)}
-          </p>
-        )}
-        <div className="mt-1 flex justify-end gap-2 border-t border-zinc-800 pt-5">
-          <button
-            type="button"
-            onClick={() => dialogRef.current?.close()}
-            className="paint-hover flex cursor-pointer rounded border border-zinc-800 px-3 py-2 text-xs"
-          >
-            <PaintHover>{t("Cancelar")}</PaintHover>
-          </button>
-          <button
-            type="submit"
-            className="paint-hover flex cursor-pointer items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium"
-          >
-            <PaintHover>
-              <Icon name={initialGoal ? "tick" : "plus"} className="size-4" />
-              {t(initialGoal ? "Guardar cambios" : "Crear meta")}
-            </PaintHover>
-          </button>
-        </div>
+        <fieldset disabled={pending} className="contents">
+          <label className="flex flex-col gap-2 text-xs">
+            {t("Nombre de la meta")}
+            <input
+              name="name"
+              defaultValue={initialGoal?.name ?? ""}
+              required
+              maxLength={100}
+              autoFocus
+              placeholder={t("Ej. Aprender inglés")}
+              onInput={(event) => event.currentTarget.setCustomValidity("")}
+              className="min-h-10 rounded border border-zinc-800 bg-black px-3 text-[13px] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-xs">
+            {t("Descripción (opcional)")}
+            <textarea
+              name="description"
+              defaultValue={initialGoal?.description ?? ""}
+              maxLength={1000}
+              rows={3}
+              placeholder={t("Describe la meta")}
+              className="min-h-24 resize-y rounded border border-zinc-800 bg-black px-3 py-2.5 text-[13px] leading-5 outline-none placeholder:text-zinc-500 focus:border-zinc-500"
+            />
+          </label>
+          <div className="flex flex-col gap-2">
+            <span className="text-xs">{t("Icono")}</span>
+            <IconPicker
+              icon={icon}
+              color={color}
+              onIconChange={setIcon}
+              onColorChange={setColor}
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-xs leading-5 text-red-400">
+              {t(error)}
+            </p>
+          )}
+          <div className="mt-1 flex justify-end gap-2 border-t border-zinc-800 pt-5">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => dialogRef.current?.close()}
+              className="paint-hover flex cursor-pointer rounded border border-zinc-800 px-3 py-2 text-xs"
+            >
+              <PaintHover>{t("Cancelar")}</PaintHover>
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className="paint-hover flex cursor-pointer items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium"
+            >
+              <PaintHover>
+                <Icon name={initialGoal ? "tick" : "plus"} className="size-4" />
+                {t(
+                  pending
+                    ? "Guardando…"
+                    : initialGoal
+                      ? "Guardar cambios"
+                      : "Crear meta",
+                )}
+              </PaintHover>
+            </button>
+          </div>
+        </fieldset>
       </form>
     </dialog>
   );

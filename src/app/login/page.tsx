@@ -5,21 +5,13 @@ import { connection } from "next/server";
 import { auth, signIn } from "@/auth";
 import GradientASCII from "@/components/GradientASCII";
 import LoginCard from "@/components/login/login-card";
+import LoginLoadingSkeleton from "@/components/login/login-loading-skeleton";
 
 export const metadata: Metadata = { title: "Iniciar sesión · Ramify" };
 
 export default function Login(props: PageProps<"/login">) {
   return (
-    <Suspense
-      fallback={
-        <main
-          className="flex min-h-svh items-center justify-center bg-[#050609] text-zinc-400"
-          aria-label="Cargando inicio de sesión"
-        >
-          Cargando…
-        </main>
-      }
-    >
+    <Suspense fallback={<LoginLoadingSkeleton />}>
       <LoginContent {...props} />
     </Suspense>
   );

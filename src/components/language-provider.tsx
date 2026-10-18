@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useSyncExternalStore,
@@ -42,16 +43,59 @@ export default function LanguageProvider({
     () => "es" as Language,
   );
   useEffect(() => {
-    document.documentElement.lang = language;
+    if (!document.documentElement.dataset.accountLanguage)
+      document.documentElement.lang = language;
   }, [language]);
-  const setLanguage = (value: Language) => {
-    localStorage.setItem(key, value);
+  const setLanguage = useCallback((value: Language) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Public pages still render when browser storage is unavailable.
+    }
     window.dispatchEvent(new Event("ramify:language-updated"));
-  };
+  }, []);
   const t = (text: string) =>
     language === "en" ? (english[text] ?? text) : text;
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+// Account consumers use the same hook as public pages, without writing the
+// account's default language back to the server during initial hydration.
+export function AccountLanguageBridge({
+  language,
+  onChange,
+  children,
+}: {
+  language: Language | null;
+  onChange: (language: Language) => void;
+  children: ReactNode;
+}) {
+  const root = useLanguage();
+  const effectiveLanguage = language ?? root.language;
+  useEffect(() => {
+    const html = document.documentElement;
+    html.dataset.accountLanguage = effectiveLanguage;
+    html.lang = effectiveLanguage;
+    return () => {
+      delete html.dataset.accountLanguage;
+      html.lang = root.language;
+    };
+  }, [effectiveLanguage, root.language]);
+  return (
+    <LanguageContext.Provider
+      value={{
+        language: effectiveLanguage,
+        setLanguage: (value) => {
+          onChange(value);
+        },
+        t: (text) =>
+          effectiveLanguage === "en" ? (english[text] ?? text) : text,
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

@@ -1,0 +1,70 @@
+.goal-card > .paint-hover-content {
+  z-index: auto;
+}
+
+.goal-card-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 190px;
+  max-width: calc(100vw - 16px);
+  padding: 5px;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  background: #09090b;
+  color: #e4e4e7;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 150ms var(--ease-out),
+    display 150ms allow-discrete,
+    overlay 150ms allow-discrete;
+}
+
+.goal-card-menu:popover-open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.goal-card-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 3px;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.goal-card-menu .goal-card-menu-delete {
+  color: #fca5a5;
+}
+
+@media (pointer: coarse) {
+  .goal-card-menu button {
+    min-height: 44px;
+  }
+}
+
+@starting-style {
+  .goal-card-menu:popover-open {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .goal-card-menu button:hover {
+    background: #18181b;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-card-menu {
+    transition: none;
+    transform: none;
+  }
+}

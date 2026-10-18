@@ -3,9 +3,9 @@
 }
 .profile-popover {
   position: fixed;
-  inset: 64px 20px auto auto;
+  inset: 72px 20px auto auto;
   margin: 0;
-  width: 276px;
+  width: 240px;
   max-width: calc(100vw - 24px);
   overflow: visible;
   padding: 8px;
@@ -27,7 +27,7 @@
   .profile-popover {
     position-anchor: --profile-trigger;
     inset: auto;
-    top: calc(anchor(bottom) + 8px);
+    top: calc(anchor(bottom) + 16px);
     right: anchor(right);
     position-try-fallbacks: flip-inline, flip-block;
   }
