@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef, type RefObject } from "react";
-import { type GoalActivity } from "@/lib/goal-activities";
+import {
+  type GoalActivity,
+  type GoalActivityChanges,
+} from "@/lib/goal-activities";
 import BranchFields from "./branch-fields";
 import "./branch-details.css";
 
@@ -15,7 +18,7 @@ export default function BranchDetails({
   dialogRef: RefObject<HTMLDialogElement | null>;
   activity?: GoalActivity;
   source: HTMLElement | null;
-  onUpdate: (id: string, changes: Partial<GoalActivity>) => boolean;
+  onUpdate: (id: string, changes: GoalActivityChanges) => boolean;
   onCreate: (parent: string, name: string) => boolean;
 }) {
   const connector = useRef<SVGPathElement>(null);
@@ -257,7 +260,7 @@ export default function BranchDetails({
           <button
             type="button"
             autoFocus
-            aria-label="Cerrar detalles de la rama"
+            aria-label="Cerrar detalles de la meta"
             onClick={() => dialogRef.current?.close()}
             className="branch-details-close"
           >

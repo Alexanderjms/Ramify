@@ -50,13 +50,6 @@ export default function GoalDetails({ id }: { id: string }) {
     });
   }
 
-  function cycleStatus(item: GoalActivity) {
-    const status = item.status === "completed" ? "pending" : "completed";
-    save((current) =>
-      mapActivities(current, item.id, (activity) => ({ ...activity, status })),
-    );
-  }
-
   function addBranch(parent: string, name: string) {
     const trimmed = name.trim();
     if (!trimmed || trimmed.length > 100) return false;
@@ -109,7 +102,7 @@ export default function GoalDetails({ id }: { id: string }) {
     return (
       <div className="p-8">
         <Link href="/metas" className="text-xs text-zinc-400">
-          ← Goals
+          ← Metas
         </Link>
         <h1 className="mt-6 text-xl font-semibold">Meta no encontrada</h1>
       </div>
@@ -126,7 +119,6 @@ export default function GoalDetails({ id }: { id: string }) {
         activities={activities}
         collapsed={collapsed}
         onToggle={toggle}
-        onStatus={cycleStatus}
         onSelect={(activity, source) => {
           setSelectedId(activity.id);
           setSelectedSource(source);
@@ -154,7 +146,7 @@ export default function GoalDetails({ id }: { id: string }) {
           save((current) =>
             mapActivities(current, activityId, (item) => ({
               ...item,
-              ...changes,
+              ...(typeof changes === "function" ? changes(item) : changes),
             })),
           )
         }

@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Meta · Ramify" };
 async function GoalContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   return (
-    <DashboardShell page="Goals" canvas goalId={id}>
+    <DashboardShell page="Metas" canvas goalId={id}>
       <GoalDetails id={id} />
     </DashboardShell>
   );
@@ -22,7 +22,7 @@ export default function GoalPage({
   return (
     <Suspense
       fallback={
-        <DashboardShell page="Goals" canvas>
+        <DashboardShell page="Metas" canvas>
           <p className="p-8 text-xs text-zinc-400">Cargando meta…</p>
         </DashboardShell>
       }

@@ -208,22 +208,6 @@
   color: white;
   background: #18181b;
 }
-.goal-node-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  min-height: 30px;
-  margin-left: -7px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition:
-    background 160ms ease,
-    opacity 160ms ease;
-}
-.goal-node-status:hover {
-  background: #18181b;
-}
 .goal-add-branch {
   display: flex;
   align-items: center;
@@ -266,8 +250,22 @@
 .goal-reorder:active {
   cursor: grabbing;
 }
+.goal-status-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 30px;
+}
+.goal-node-label[data-details-selected] :is(.goal-add-branch, .goal-reorder) {
+  color: #e4e4e7;
+  background: #18181b;
+}
 @media (hover: hover) and (pointer: fine) {
-  .goal-node-label:not(:hover):not(:focus-within) .goal-reorder {
+  .goal-node-label:not([data-details-selected]):not(:hover):not(
+      :has(:focus-visible)
+    )
+    .goal-reorder {
     opacity: 0;
   }
   .goal-reorder:hover {
@@ -284,9 +282,10 @@
   border-color: #27272a;
 }
 @media (hover: hover) and (pointer: fine) {
-  .goal-node-label:not(:hover):not(:focus-within)
-    .goal-node-status[data-status="pending"],
-  .goal-node-label:not(:hover):not(:focus-within) .goal-add-branch {
+  .goal-node-label:not([data-details-selected]):not(:hover):not(
+      :has(:focus-visible)
+    )
+    .goal-add-branch {
     opacity: 0;
   }
 }

@@ -28,7 +28,7 @@ export default function DashboardHeader({
               href="/metas"
               className="shrink-0 text-zinc-400 transition-colors hover:text-white"
             >
-              Goals
+              Metas
             </Link>
             <i
               aria-hidden="true"

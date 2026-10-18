@@ -334,6 +334,37 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+.branch-compact-form {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+.branch-compact-form input {
+  font-size: 12px;
+  flex: 1;
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 8px;
+}
+.branch-compact-form button {
+  justify-content: center;
+  width: 30px;
+  min-height: 32px;
+  padding: 4px;
+  flex-shrink: 0;
+  border: 0;
+}
+.branch-resource-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.branch-resource-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .branch-empty {
   color: #71717a;
   font-size: 12px;

@@ -12,7 +12,7 @@ export default function DashboardShell({
   goalId,
 }: {
   children: ReactNode;
-  page?: "Dashboard" | "Goals";
+  page?: "Dashboard" | "Metas";
   canvas?: boolean;
   goalId?: string;
 }) {

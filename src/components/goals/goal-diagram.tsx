@@ -26,7 +26,6 @@ export default function GoalDiagram({
   activities,
   collapsed,
   onToggle,
-  onStatus,
   onSelect,
   onCreate,
   onMove,
@@ -36,7 +35,6 @@ export default function GoalDiagram({
   activities: GoalActivity[];
   collapsed: Set<string>;
   onToggle: (id: string) => void;
-  onStatus: (activity: GoalActivity) => void;
   onSelect: (activity: GoalActivity, source: HTMLElement) => void;
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
@@ -154,8 +152,8 @@ export default function GoalDiagram({
     return (
       <button
         className="goal-add-branch"
-        aria-label={`Añadir rama a ${name}`}
-        title={`Añadir rama a ${name}`}
+        aria-label={`Añadir meta a ${name}`}
+        title={`Añadir meta a ${name}`}
         aria-expanded={creating === parent}
         onClick={(event) => {
           createTrigger.current = event.currentTarget;
@@ -168,7 +166,7 @@ export default function GoalDiagram({
         }}
       >
         <i aria-hidden="true" className="bi bi-plus-lg" />
-        {parent === "" && <span>Nueva rama</span>}
+        {parent === "" && <span>Nueva meta</span>}
       </button>
     );
   }
@@ -219,7 +217,7 @@ export default function GoalDiagram({
           onClick={onExpandAll}
         >
           <i aria-hidden="true" className="bi bi-arrows-expand" />
-          Expandir todas las ramas
+          Expandir todas las metas
         </button>
         <button
           type="button"
@@ -228,7 +226,7 @@ export default function GoalDiagram({
           onClick={collapseAll}
         >
           <i aria-hidden="true" className="bi bi-arrows-collapse" />
-          Contraer todas las ramas
+          Contraer todas las metas
         </button>
       </div>
       <div
@@ -353,7 +351,7 @@ export default function GoalDiagram({
                 {!activity.id ? (
                   <form
                     className="goal-inline-create"
-                    aria-label="Crear rama"
+                    aria-label="Crear meta"
                     onKeyDown={(event) => {
                       if (event.key === "Escape") {
                         event.preventDefault();
@@ -373,8 +371,8 @@ export default function GoalDiagram({
                     <input
                       key={creating}
                       name="name"
-                      aria-label="Nombre de la nueva rama"
-                      placeholder="Nombre de la rama"
+                      aria-label="Nombre de la nueva meta"
+                      placeholder="Nombre de la meta"
                       required
                       maxLength={100}
                       autoFocus
@@ -388,20 +386,20 @@ export default function GoalDiagram({
                         event.currentTarget.setCustomValidity(
                           event.currentTarget.value.trim()
                             ? ""
-                            : "Escribe el nombre de la rama.",
+                            : "Escribe el nombre de la meta.",
                         )
                       }
                     />
                     <button
                       type="submit"
-                      aria-label="Guardar rama"
+                      aria-label="Guardar meta"
                       title="Guardar (Enter)"
                     >
                       <i aria-hidden="true" className="bi bi-check-lg" />
                     </button>
                     <button
                       type="button"
-                      aria-label="Cancelar rama"
+                      aria-label="Cancelar meta"
                       title="Cancelar (Escape)"
                       onClick={closeEditor}
                     >
@@ -422,7 +420,7 @@ export default function GoalDiagram({
                     {!!activity.children?.length && (
                       <button
                         className="goal-node-chevron"
-                        aria-label={`${collapsed.has(activity.id) ? "Expandir" : "Contraer"} rama ${activity.name}`}
+                        aria-label={`${collapsed.has(activity.id) ? "Expandir" : "Contraer"} meta ${activity.name}`}
                         aria-expanded={!collapsed.has(activity.id)}
                         onClick={() => {
                           if (creating === activity.id) closeEditor();
@@ -435,27 +433,30 @@ export default function GoalDiagram({
                         />
                       </button>
                     )}
-                    <button
-                      className="goal-node-status"
-                      data-status={activity.status}
-                      aria-label={`Cambiar estado de ${activity.name}`}
-                      title={
-                        activity.status === "completed"
-                          ? "Completada"
-                          : activity.status === "progress"
-                            ? "En proceso"
-                            : "Pendiente"
-                      }
-                      onClick={() => onStatus(activity)}
-                    >
-                      <ActivityStatus status={activity.status} />
-                    </button>
+                    {activity.status !== "pending" && (
+                      <span
+                        className="goal-status-indicator"
+                        role="img"
+                        aria-label={
+                          activity.status === "completed"
+                            ? "Completada"
+                            : "En proceso"
+                        }
+                        title={
+                          activity.status === "completed"
+                            ? "Completada"
+                            : "En proceso"
+                        }
+                      >
+                        <ActivityStatus status={activity.status} />
+                      </span>
+                    )}
                     {addButton(activity.id, activity.name)}
                     {total > 1 && (
                       <button
                         type="button"
                         className="goal-reorder"
-                        aria-label={`Reordenar rama ${activity.name}`}
+                        aria-label={`Reordenar meta ${activity.name}`}
                         title="Arrastra para ordenar. Con teclado: flechas arriba y abajo."
                         aria-pressed={reordering?.id === activity.id}
                         onKeyDown={(event) => {
@@ -542,8 +543,8 @@ export default function GoalDiagram({
             ))}
             {!activities.length && creating === null && (
               <p className="absolute left-[92px] top-24 max-w-64 text-xs leading-5 text-zinc-400">
-                Pulsa Nueva rama junto a los ajustes para añadir tu primera
-                rama.
+                Pulsa Nueva meta junto a los ajustes para añadir tu primera
+                meta.
               </p>
             )}
           </div>
@@ -581,10 +582,10 @@ export default function GoalDiagram({
         <button aria-label="Ajustar a pantalla" onClick={fit}>
           <i aria-hidden="true" className="bi bi-fullscreen" />
         </button>
-        <button aria-label="Expandir ramas" onClick={onExpandAll}>
+        <button aria-label="Expandir metas" onClick={onExpandAll}>
           <i aria-hidden="true" className="bi bi-arrows-expand" />
         </button>
-        <button aria-label="Contraer ramas" onClick={collapseAll}>
+        <button aria-label="Contraer metas" onClick={collapseAll}>
           <i aria-hidden="true" className="bi bi-arrows-collapse" />
         </button>
       </div>

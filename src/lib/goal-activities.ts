@@ -1,4 +1,9 @@
-export type GoalResource = { id: string; name: string; url: string };
+export type GoalResource = {
+  id: string;
+  url: string;
+  name?: string;
+  fileName?: string;
+};
 
 export type GoalActivity = {
   id: string;
@@ -12,6 +17,10 @@ export type GoalActivity = {
   notes?: string;
   resources?: GoalResource[];
 };
+
+export type GoalActivityChanges =
+  | Partial<GoalActivity>
+  | ((current: GoalActivity) => Partial<GoalActivity>);
 
 export function validResourceUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 2000) return false;
@@ -160,10 +169,21 @@ export function validActivities(
               resource &&
               typeof resource.id === "string" &&
               resource.id &&
-              typeof resource.name === "string" &&
-              resource.name.trim() &&
-              resource.name.length <= 200 &&
-              validResourceUrl(resource.url),
+              (resource.name === undefined ||
+                (typeof resource.name === "string" &&
+                  resource.name.trim() &&
+                  resource.name.length <= 200)) &&
+              (resource.fileName === undefined
+                ? validResourceUrl(resource.url)
+                : typeof resource.fileName === "string" &&
+                  resource.fileName.trim() &&
+                  resource.fileName.length <= 255 &&
+                  !/[\x00-\x1f]/.test(resource.fileName) &&
+                  typeof resource.url === "string" &&
+                  resource.url.length <= 1398145 &&
+                  /^data:application\/octet-stream;base64,[A-Za-z0-9+/]*={0,2}$/.test(
+                    resource.url,
+                  )),
           ) ||
           new Set(item.resources.map((resource: GoalResource) => resource.id))
             .size !== item.resources.length)

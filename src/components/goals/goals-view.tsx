@@ -74,7 +74,7 @@ export default function GoalsView() {
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div>
           <h1 className="text-[26px] font-semibold leading-normal tracking-[-0.6px]">
-            Goals
+            Metas
           </h1>
           <p className="mt-[9px] text-[13px] text-zinc-400">
             Consulta y organiza tus metas.
