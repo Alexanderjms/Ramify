@@ -1,15 +1,4 @@
 export const english: Record<string, string> = {
-  "Avance por meta": "Progress by goal",
-  "Compara el porcentaje completado de tus metas.":
-    "Compare the completion percentage of your goals.",
-  "Ver datos y abrir metas": "View data and open goals",
-  "Crea una meta para ver su avance.": "Create a goal to see its progress.",
-  "Estado de las tareas": "Task status",
-  "Todas las ramas, con el mismo conteo de tus metas.":
-    "All branches, using the same counts as your goals.",
-  Pendientes: "Pending",
-  "Añade ramas a tus metas para ver su distribución.":
-    "Add branches to your goals to see their distribution.",
   "El nombre no puede superar los 100 caracteres.":
     "The name cannot exceed 100 characters.",
   "No se pudo obtener el título": "Could not get the title",
