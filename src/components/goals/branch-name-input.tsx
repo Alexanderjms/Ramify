@@ -11,10 +11,9 @@ export default function BranchNameInput(props: ComponentProps<"input">) {
       onInput={(event) => {
         const input = event.currentTarget;
         const value = input.value.trim();
+        const tooLong = value.length > 100 && !validResourceUrl(value);
         input.setCustomValidity(
-          !validResourceUrl(value) && value.length > 100
-            ? t("El nombre no puede superar los 100 caracteres.")
-            : "",
+          tooLong ? t("El nombre no puede superar los 100 caracteres.") : "",
         );
         props.onInput?.(event);
       }}

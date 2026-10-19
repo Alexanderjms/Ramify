@@ -3,8 +3,6 @@ import { validResourceUrl } from "@/lib/goal-activities";
 import { getLinkTitle } from "@/lib/link-title";
 import { readRequestBody, RequestBodyError } from "@/lib/request-body";
 
-export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   if (request.headers.get("origin") !== new URL(request.url).origin)
     return Response.json({ error: "Forbidden" }, { status: 403 });
