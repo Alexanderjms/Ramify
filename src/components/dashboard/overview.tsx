@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import GoalCard from "./goal-card";
 import NewGoalButton from "./new-goal-button";
 import type { Goal } from "@/lib/goals";
@@ -7,6 +8,9 @@ import EmptyGoals from "@/components/goals/empty-goals";
 import { useGoals } from "@/components/goals/goals-provider";
 import { GoalCardSkeleton } from "@/components/goals/goal-loading-skeleton";
 import { useLanguage } from "@/components/language-provider";
+import GoalProgressChart from "./goal-progress-chart";
+import TaskStatusChart from "./task-status-chart";
+import { dashboardTasks } from "@/lib/dashboard-charts";
 
 function RecentGoals({ goals, loading }: { goals: Goal[]; loading: boolean }) {
   const { t } = useLanguage();
@@ -45,12 +49,21 @@ function RecentGoals({ goals, loading }: { goals: Goal[]; loading: boolean }) {
 
 export default function DashboardOverview() {
   const { goals, loading } = useGoals();
+  const tasks = useMemo(() => dashboardTasks(goals), [goals]);
   return (
-    <RecentGoals
-      loading={loading && goals.length === 0}
-      goals={[...goals].sort(
-        (a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0),
+    <>
+      <RecentGoals
+        loading={loading && goals.length === 0}
+        goals={[...goals].sort(
+          (a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0),
+        )}
+      />
+      {!(loading && goals.length === 0) && (
+        <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <GoalProgressChart goals={goals} />
+          <TaskStatusChart tasks={tasks} />
+        </div>
       )}
-    />
+    </>
   );
 }
