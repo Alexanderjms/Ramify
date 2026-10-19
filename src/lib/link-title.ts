@@ -79,7 +79,7 @@ export function linkTitleText(value: string) {
         ? String.fromCodePoint(code)
         : " ";
     })
-    .replace(/[\x00-\x1f\x7f]|\s+/g, " ")
+    .replace(/[\s\x00-\x1f\x7f]+/g, " ")
     .trim()
     .slice(0, 100)
     .replace(/[\uD800-\uDBFF]$/, "");
@@ -87,7 +87,6 @@ export function linkTitleText(value: string) {
 }
 
 export function htmlLinkTitle(html: string) {
-  // ponytail: static metadata only; JS-only pages keep the hostname without a renderer.
   const head = html
     .split(/<\/head\s*>/i, 1)[0]
     .replace(/<!--[\s\S]*?-->|<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, "");
@@ -150,7 +149,6 @@ async function readPublicPage(
         agent: false,
         family: addresses[0].family,
         signal,
-        // Pin the checked address; a second DNS lookup would permit rebinding.
         lookup: (_hostname, _options, callback) =>
           callback(null, addresses[0].address, addresses[0].family),
         headers: {

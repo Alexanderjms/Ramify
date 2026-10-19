@@ -22,8 +22,9 @@ import { useLanguage } from "@/components/language-provider";
 import "./goal-details.css";
 import { ErrorToast } from "@/components/app-feedback";
 import { gooeyToast } from "goey-toast";
-import { errorMessage, responseError } from "@/lib/feedback";
+import { errorMessage } from "@/lib/feedback";
 import { validText } from "@/lib/input-validation";
+import useLinkBranchTitle from "./use-link-branch-title";
 
 export default function GoalDetails({
   id,
@@ -80,20 +81,6 @@ export default function GoalDetails({
     null,
   );
   const detailsDialog = useRef<HTMLDialogElement>(null);
-  const titleRequests = useRef(new Map<string, AbortController>());
-  const active = useRef(true);
-  useEffect(() => {
-    active.current = true;
-    const requests = titleRequests.current;
-    return () => {
-      active.current = false;
-      for (const [activityId, controller] of requests) {
-        controller.abort();
-        gooeyToast.dismiss(`link-title:${activityId}`);
-      }
-      requests.clear();
-    };
-  }, [id, userId]);
   const activities = goal?.activities ?? [];
   const all = flattenActivities(activities);
   const selected = all.find((item) => item.id === selectedId);
@@ -134,64 +121,8 @@ export default function GoalDetails({
     });
   }
 
-  async function loadBranchTitle(item: GoalActivity, url: string) {
-    if (!active.current) return;
-    titleRequests.current.get(item.id)?.abort();
-    const controller = new AbortController();
-    titleRequests.current.set(item.id, controller);
-    const toastId = `link-title:${item.id}`;
-    gooeyToast.dismiss(toastId);
-    try {
-      const response = await fetch("/api/link-title", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Ramify-User-Id": userId,
-        },
-        body: JSON.stringify({ url }),
-        signal: AbortSignal.any([
-          controller.signal,
-          AbortSignal.timeout(12000),
-        ]),
-      });
-      if (!response.ok) throw responseError(response);
-      const { title }: { title: unknown } = await response.json();
-      if (!validText(title, 100) || !title.trim())
-        throw new Error("Title unavailable");
-      if (controller.signal.aborted) return;
-      save((current) =>
-        mapActivities(current, item.id, (activity) => {
-          if (
-            activity.name !== item.name ||
-            !activity.resources?.some(
-              (resource) =>
-                resource.id === item.resources?.[0].id && resource.url === url,
-            )
-          )
-            return activity;
-          return { ...activity, name: title };
-        }),
-      );
-      titleRequests.current.delete(item.id);
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      gooeyToast.error(t("No se pudo obtener el título"), {
-        id: toastId,
-        description: t(
-          errorMessage(
-            error,
-            "El enlace se guardó en Recursos. Puedes editar el nombre o reintentar.",
-          ),
-        ),
-        action: {
-          label: t("Reintentar"),
-          onClick: () => {
-            void loadBranchTitle(item, url);
-          },
-        },
-      });
-    }
-  }
+  const { load: loadBranchTitle, cancel: cancelTitleRequests } =
+    useLinkBranchTitle(id, userId, save);
 
   function addBranch(parent: string, name: string) {
     const trimmed = name.trim();
@@ -365,11 +296,7 @@ export default function GoalDetails({
         onDelete={() => {
           if (!deletingBranchId) throw new Error("Branch not found");
           const removed = new Set(deleteBranch(id, deletingBranchId));
-          for (const activityId of removed) {
-            titleRequests.current.get(activityId)?.abort();
-            titleRequests.current.delete(activityId);
-            gooeyToast.dismiss(`link-title:${activityId}`);
-          }
+          cancelTitleRequests(removed);
           setCollapsed(
             (previous) =>
               new Set(
