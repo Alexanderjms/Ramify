@@ -67,6 +67,8 @@ export default function ValidatedForm({
             message = t("El texto contiene caracteres no válidos.");
           else if (input.validity.valueMissing)
             message = t("Completa este campo.");
+          else if (input.validity.customError)
+            message = input.validationMessage;
           else if (
             input.type === "url" &&
             (input.validity.patternMismatch || input.validity.typeMismatch)

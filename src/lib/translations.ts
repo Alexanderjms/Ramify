@@ -1,4 +1,9 @@
 export const english: Record<string, string> = {
+  "El nombre no puede superar los 100 caracteres.":
+    "The name cannot exceed 100 characters.",
+  "No se pudo obtener el título": "Could not get the title",
+  "El enlace se guardó en Recursos. Puedes editar el nombre o reintentar.":
+    "The link was saved in Resources. You can edit the name or retry.",
   "El texto contiene caracteres no válidos.":
     "The text contains invalid characters.",
   "Rama eliminada": "Branch deleted",

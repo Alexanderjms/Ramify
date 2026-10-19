@@ -2,6 +2,7 @@ import { useId } from "react";
 import { useLanguage } from "@/components/language-provider";
 import "@/components/login/github-button.css";
 import ValidatedForm from "@/components/validated-form";
+import BranchNameInput from "./branch-name-input";
 
 export default function EmptyGoalDiagram({
   onCreate,
@@ -41,12 +42,11 @@ export default function EmptyGoalDiagram({
           <label htmlFor={id} className="mb-2 block text-xs text-zinc-300">
             {t("Nombre de la primera meta")}
           </label>
-          <input
+          <BranchNameInput
             id={id}
             name="name"
             required
             pattern={".*\\S.*"}
-            maxLength={100}
             placeholder={t("Ej. Practicar 15 minutos al día")}
             className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-400"
           />

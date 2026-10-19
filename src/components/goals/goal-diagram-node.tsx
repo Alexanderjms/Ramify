@@ -8,6 +8,7 @@ import { type GoalActivity } from "@/lib/goal-activities";
 import { ActivityStatus } from "./activity-status";
 import Tooltip from "@/components/tooltip";
 import ValidatedForm from "@/components/validated-form";
+import BranchNameInput from "./branch-name-input";
 
 export type DiagramNode = {
   activity: GoalActivity;
@@ -107,14 +108,13 @@ export default function GoalDiagramNode({
               onCloseEditor(false, true);
           }}
         >
-          <input
+          <BranchNameInput
             key={creating}
             name="name"
             aria-label={t("Nombre de la nueva meta")}
             placeholder={t("Nombre de la meta")}
             required
             pattern={".*\\S.*"}
-            maxLength={100}
             autoFocus
             onFocus={(event) =>
               event.currentTarget.closest("form")?.scrollIntoView({
