@@ -25,6 +25,7 @@ export default function IconPicker({
   onColorChange: (color: string) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const [colorPage, setColorPage] = useState(0);
   const { t } = useLanguage();
   const palette = useRef<HTMLDivElement>(null);
@@ -114,6 +115,7 @@ export default function IconPicker({
         ref={dialog}
         id={id}
         aria-labelledby={`${id}-title`}
+        onToggle={(event) => setOpen(event.newState === "open")}
         onCancel={(event) => event.stopPropagation()}
         onClose={(event) => {
           event.stopPropagation();
@@ -132,42 +134,46 @@ export default function IconPicker({
         }}
         className="new-goal-modal icon-picker-modal app-scrollbar fixed m-auto max-h-[calc(100svh-24px)] w-[calc(100%-24px)] max-w-[500px] overflow-x-hidden overflow-y-auto rounded-lg border border-zinc-800 bg-black p-4 text-white [color-scheme:dark] sm:max-h-[calc(100svh-32px)] sm:w-[calc(100%-32px)] sm:p-7"
       >
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2
-            id={`${id}-title`}
-            className="text-lg font-semibold tracking-[-0.4px]"
-          >
-            {t("Icono y color")}
-          </h2>
-          <TooltipButton
-            type="button"
-            aria-label={t("Cerrar selector de iconos")}
-            onClick={() => dialog.current?.close()}
-            className="paint-hover flex cursor-pointer rounded p-1 text-zinc-400"
-          >
-            <PaintHover>
-              <i
-                aria-hidden="true"
-                className="bi bi-x-lg text-sm leading-none"
-              />
-            </PaintHover>
-          </TooltipButton>
-        </div>
-        <IconColorPalette
-          color={color}
-          colorPage={colorPage}
-          paletteRef={palette}
-          onColorChange={onColorChange}
-          onPageChange={changeColorPage}
-        />
-        <IconSearch
-          icon={icon}
-          color={color}
-          query={query}
-          onQueryChange={setQuery}
-          onIconChange={onIconChange}
-          onClose={() => dialog.current?.close()}
-        />
+        {open && (
+          <>
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <h2
+                id={`${id}-title`}
+                className="text-lg font-semibold tracking-[-0.4px]"
+              >
+                {t("Icono y color")}
+              </h2>
+              <TooltipButton
+                type="button"
+                aria-label={t("Cerrar selector de iconos")}
+                onClick={() => dialog.current?.close()}
+                className="paint-hover flex cursor-pointer rounded p-1 text-zinc-400"
+              >
+                <PaintHover>
+                  <i
+                    aria-hidden="true"
+                    className="bi bi-x-lg text-sm leading-none"
+                  />
+                </PaintHover>
+              </TooltipButton>
+            </div>
+            <IconColorPalette
+              color={color}
+              colorPage={colorPage}
+              paletteRef={palette}
+              onColorChange={onColorChange}
+              onPageChange={changeColorPage}
+            />
+            <IconSearch
+              icon={icon}
+              color={color}
+              query={query}
+              onQueryChange={setQuery}
+              onIconChange={onIconChange}
+              onClose={() => dialog.current?.close()}
+            />
+          </>
+        )}
       </dialog>
     </div>
   );

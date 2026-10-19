@@ -1,4 +1,5 @@
 import type { Goal } from "./goals";
+import { isGoalIcon } from "./goal-icons";
 import {
   exampleActivities,
   flattenActivities,
@@ -38,9 +39,7 @@ export function parseGoals(snapshot: string): Goal[] {
         goal.description.length <= 1000 &&
         typeof goal.color === "string" &&
         /^#[a-f\d]{6}$/i.test(goal.color) &&
-        (goal.icon === undefined ||
-          (typeof goal.icon === "string" &&
-            /^[a-z0-9-]+-fill$/.test(goal.icon))) &&
+        (goal.icon === undefined || isGoalIcon(goal.icon)) &&
         Number.isFinite(goal.progress) &&
         goal.progress >= 0 &&
         goal.progress <= 100 &&

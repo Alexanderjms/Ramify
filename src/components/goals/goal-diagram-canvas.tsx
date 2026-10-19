@@ -7,6 +7,7 @@ import GoalDiagramNode, {
   type Reordering,
 } from "./goal-diagram-node";
 import type { ReactNode } from "react";
+import EmptyGoalDiagram from "./empty-goal-diagram";
 
 export default function GoalDiagramCanvas({
   activities,
@@ -99,146 +100,145 @@ export default function GoalDiagramCanvas({
         delete event.currentTarget.dataset.dragging;
       }}
     >
-      <div style={{ width: width * zoom, height: height * zoom }}>
-        <div
-          className="goal-diagram-content"
-          style={{ width, height, transform: `scale(${zoom})` }}
-        >
-          <svg
-            width={width}
-            height={height}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            fill="none"
-            strokeLinecap="round"
+      {!activities.length && creating === null ? (
+        <EmptyGoalDiagram onCreate={onCreate} />
+      ) : (
+        <div style={{ width: width * zoom, height: height * zoom }}>
+          <div
+            className="goal-diagram-content"
+            style={{ width, height, transform: `scale(${zoom})` }}
           >
-            <defs>
-              <linearGradient
-                id={`${gradientId}-trunk`}
-                gradientUnits="userSpaceOnUse"
-                x1="66"
-                y1="-12"
-                x2="66"
-                y2={trunkEnd}
-              >
-                <stop offset="0" stopColor="#64748B" />
-                {nodes
-                  .filter((node) => node.parentX === 66)
-                  .map((node) => (
-                    <stop
-                      key={node.activity.id}
-                      offset={(node.y - 36) / (trunkEnd + 12)}
-                      stopColor={node.activity.color}
-                    />
-                  ))}
-                <stop
-                  offset="1"
-                  stopColor={
-                    nodes.filter((node) => node.parentX === 66).at(-1)?.activity
-                      .color ?? "#64748B"
-                  }
-                />
-              </linearGradient>
-            </defs>
-            <path
-              className="goal-root-connection"
-              d={`M104 -12 C104 32,66 40,66 88 V${trunkEnd}`}
-              stroke={`url(#${gradientId}-trunk)`}
-              strokeWidth="5"
-            />
-            {nodes.map((node) => (
-              <path
-                key={node.activity.id}
-                data-activity-id={node.activity.id || undefined}
-                pointerEvents="stroke"
-                d={`M${node.parentX} ${node.y - 48} C${node.parentX} ${node.y - 24},${node.x} ${node.y - 24},${node.x} ${node.y}`}
-                stroke={node.activity.color}
-                strokeWidth={node.parentX === 66 ? 5 : 4}
-              />
-            ))}
-            {nodes
-              .filter(
-                (node) =>
-                  node.activity.id &&
-                  (creating === node.activity.id ||
-                    (node.activity.children?.length &&
-                      !collapsed.has(node.activity.id))),
-              )
-              .map((node) => {
-                const children = nodes.filter(
-                  (child) => child.parentId === node.activity.id,
-                );
-                return (
-                  <path
-                    key={node.activity.id}
-                    data-activity-id={node.activity.id}
-                    pointerEvents="stroke"
-                    d={`M${node.x} ${node.y} V${children.at(-1)!.y - 48}`}
-                    stroke={node.activity.color}
-                    strokeWidth="4"
+            <svg
+              width={width}
+              height={height}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+              fill="none"
+              strokeLinecap="round"
+            >
+              <defs>
+                <linearGradient
+                  id={`${gradientId}-trunk`}
+                  gradientUnits="userSpaceOnUse"
+                  x1="66"
+                  y1="-12"
+                  x2="66"
+                  y2={trunkEnd}
+                >
+                  <stop offset="0" stopColor="#64748B" />
+                  {nodes
+                    .filter((node) => node.parentX === 66)
+                    .map((node) => (
+                      <stop
+                        key={node.activity.id}
+                        offset={(node.y - 36) / (trunkEnd + 12)}
+                        stopColor={node.activity.color}
+                      />
+                    ))}
+                  <stop
+                    offset="1"
+                    stopColor={
+                      nodes.filter((node) => node.parentX === 66).at(-1)
+                        ?.activity.color ?? "#64748B"
+                    }
                   />
-                );
-              })}
-            {nodes
-              .filter((node) => !node.activity.id)
-              .map((node) => (
-                <circle
+                </linearGradient>
+              </defs>
+              <path
+                className="goal-root-connection"
+                d={`M104 -12 C104 32,66 40,66 88 V${trunkEnd}`}
+                stroke={`url(#${gradientId}-trunk)`}
+                strokeWidth="5"
+              />
+              {nodes.map((node) => (
+                <path
                   key={node.activity.id}
-                  cx={node.x}
-                  cy={node.y}
-                  r="9"
-                  fill={node.activity.color}
+                  data-activity-id={node.activity.id || undefined}
+                  pointerEvents="stroke"
+                  d={`M${node.parentX} ${node.y - 48} C${node.parentX} ${node.y - 24},${node.x} ${node.y - 24},${node.x} ${node.y}`}
+                  stroke={node.activity.color}
+                  strokeWidth={node.parentX === 66 ? 5 : 4}
                 />
               ))}
-          </svg>
-          {nodes
-            .filter((node) => node.activity.id)
-            .map(({ activity, x, y }) => (
-              <div
-                key={activity.id}
-                className="goal-node-color"
-                data-activity-id={activity.id}
-                style={{ left: x - 14, top: y - 14 }}
-              >
-                <BranchColorPicker
-                  name={activity.name}
-                  color={activity.color}
-                  onChange={(color) => onColor(activity.id, color)}
-                />
-              </div>
+              {nodes
+                .filter(
+                  (node) =>
+                    node.activity.id &&
+                    (creating === node.activity.id ||
+                      (node.activity.children?.length &&
+                        !collapsed.has(node.activity.id))),
+                )
+                .map((node) => {
+                  const children = nodes.filter(
+                    (child) => child.parentId === node.activity.id,
+                  );
+                  return (
+                    <path
+                      key={node.activity.id}
+                      data-activity-id={node.activity.id}
+                      pointerEvents="stroke"
+                      d={`M${node.x} ${node.y} V${children.at(-1)!.y - 48}`}
+                      stroke={node.activity.color}
+                      strokeWidth="4"
+                    />
+                  );
+                })}
+              {nodes
+                .filter((node) => !node.activity.id)
+                .map((node) => (
+                  <circle
+                    key={node.activity.id}
+                    cx={node.x}
+                    cy={node.y}
+                    r="9"
+                    fill={node.activity.color}
+                  />
+                ))}
+            </svg>
+            {nodes
+              .filter((node) => node.activity.id)
+              .map(({ activity, x, y }) => (
+                <div
+                  key={activity.id}
+                  className="goal-node-color"
+                  data-activity-id={activity.id}
+                  style={{ left: x - 14, top: y - 14 }}
+                >
+                  <BranchColorPicker
+                    name={activity.name}
+                    color={activity.color}
+                    onChange={(color) => onColor(activity.id, color)}
+                  />
+                </div>
+              ))}
+            {nodes.map((node) => (
+              <GoalDiagramNode
+                key={node.activity.id}
+                node={node}
+                nodes={nodes}
+                collapsed={collapsed}
+                creating={creating}
+                zoom={zoom}
+                reordering={reordering}
+                reorderStart={reorderStart}
+                setReordering={setReordering}
+                viewport={viewport}
+                onReorderStart={(clientY) => {
+                  reorderStart.current = clientY;
+                }}
+                language={language}
+                t={t}
+                onToggle={onToggle}
+                onSelect={onSelect}
+                onCreate={onCreate}
+                onMove={onMove}
+                onCloseEditor={onCloseEditor}
+                addButton={addButton}
+              />
             ))}
-          {nodes.map((node) => (
-            <GoalDiagramNode
-              key={node.activity.id}
-              node={node}
-              nodes={nodes}
-              collapsed={collapsed}
-              creating={creating}
-              zoom={zoom}
-              reordering={reordering}
-              reorderStart={reorderStart}
-              setReordering={setReordering}
-              viewport={viewport}
-              onReorderStart={(clientY) => {
-                reorderStart.current = clientY;
-              }}
-              language={language}
-              t={t}
-              onToggle={onToggle}
-              onSelect={onSelect}
-              onCreate={onCreate}
-              onMove={onMove}
-              onCloseEditor={onCloseEditor}
-              addButton={addButton}
-            />
-          ))}
-          {!activities.length && creating === null && (
-            <p className="absolute left-[92px] top-24 max-w-64 text-xs leading-5 text-zinc-400">
-              Pulsa Nueva meta junto a los ajustes para añadir tu primera meta.
-            </p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

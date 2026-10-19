@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useGoals } from "@/components/goals/goals-provider";
 import GoalSymbol from "@/components/goals/goal-symbol";
 import { useLanguage } from "@/components/language-provider";
@@ -21,6 +22,10 @@ export default function DashboardHeader({
   const { goals, loading } = useGoals();
   const { t } = useLanguage();
   const goal = goalId ? goals.find((goal) => goal.id === goalId) : undefined;
+  const pageTitle = `${goal?.name ?? t(goalId ? "Meta" : title)} · Ramify`;
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
   return (
     <header className="flex h-14 min-w-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 sm:gap-4 sm:px-8">
       <nav

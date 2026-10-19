@@ -1,13 +1,12 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
-import { TooltipButton } from "@/components/tooltip";
 import Icon from "@/components/icon";
-import PaintHover from "@/components/paint-hover";
 import type { Goal } from "@/lib/goals";
 import { formatGoalActivityTime } from "@/lib/goal-activity-time";
 import GoalSymbol from "./goal-symbol";
 import Link from "next/link";
+import GoalCardMenu from "./goal-card-menu";
 
 export default function GoalsTable({ goals }: { goals: Goal[] }) {
   const { t, language } = useLanguage();
@@ -53,7 +52,7 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
             return (
               <tr
                 key={goal.id ?? goal.name}
-                className="goal-table-row border-b border-zinc-800"
+                className={`goal-table-row relative border-b border-zinc-800 ${goal.id ? "cursor-pointer" : ""}`}
               >
                 <th scope="row" className="px-4 py-5 font-normal">
                   <div className="flex items-center gap-3">
@@ -62,7 +61,7 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
                       {goal.id ? (
                         <Link
                           href={`/metas/${encodeURIComponent(goal.id)}`}
-                          className="text-[13px] font-medium text-white"
+                          className="text-[13px] font-medium text-white after:absolute after:inset-0 after:z-10 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-white"
                         >
                           {goal.name}
                         </Link>
@@ -105,17 +104,7 @@ export default function GoalsTable({ goals }: { goals: Goal[] }) {
                   {activityTime?.text ?? t(goal.activity)}
                 </td>
                 <td className="pr-4">
-                  <TooltipButton
-                    type="button"
-                    disabled
-                    aria-label={`${t("Opciones de")} ${goal.name} ${t("(próximamente)")}`}
-                    title={t("Opciones: próximamente")}
-                    className="paint-hover flex rounded p-1 text-zinc-400"
-                  >
-                    <PaintHover>
-                      <Icon name="more" className="size-4" />
-                    </PaintHover>
-                  </TooltipButton>
+                  <GoalCardMenu goal={goal} />
                 </td>
               </tr>
             );

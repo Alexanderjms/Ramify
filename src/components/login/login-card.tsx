@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/language-provider";
+import { useEffect } from "react";
 import Image from "next/image";
 import type { Session } from "next-auth";
 import Icon from "@/components/icon";
@@ -16,6 +17,10 @@ export default function LoginCard({
   action: () => Promise<void>;
 }) {
   const { t, language } = useLanguage();
+  const pageTitle = `${t(session ? "Sesión iniciada" : "Iniciar sesión")} · Ramify`;
+  useEffect(() => {
+    document.title = pageTitle;
+  }, [pageTitle]);
   return (
     <div className="w-full max-w-[380px] rounded-2xl border border-white/15 bg-[#090b10]/50 px-5 py-8 text-center shadow-2xl backdrop-blur-xl sm:px-9 sm:py-10">
       <Image

@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccountLanguageBridge, useLanguage } from "./language-provider";
+import DashboardLoadingSkeleton from "./dashboard/loading-skeleton";
 import {
   defaultUserPreferences,
   parsePreferencesPatch,
@@ -31,9 +32,11 @@ const PreferencesContext = createContext<{
 export default function UserPreferencesProvider({
   userId,
   children,
+  initialPreferences,
 }: {
   userId: string;
   children: ReactNode;
+  initialPreferences?: UserPreferences;
 }) {
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => preferencesQueryKey(userId), [userId]);
@@ -44,6 +47,9 @@ export default function UserPreferencesProvider({
 
   const preferencesQuery = useQuery({
     queryKey,
+    initialData: initialPreferences
+      ? { preferences: initialPreferences, loaded: true }
+      : undefined,
     queryFn: async ({ signal }) => {
       const response = await fetch("/api/preferences", {
         cache: "no-store",
@@ -227,7 +233,11 @@ export default function UserPreferencesProvider({
         }
         onChange={(language) => updatePreferences({ language })}
       >
-        {children}
+        {preferencesQuery.data?.loaded ? (
+          children
+        ) : (
+          <DashboardLoadingSkeleton />
+        )}
         {(preferencesQuery.isError || syncError) && (
           <PreferencesError
             onRetry={() => {

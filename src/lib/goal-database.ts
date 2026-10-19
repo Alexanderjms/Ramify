@@ -1,6 +1,7 @@
 import type { Client } from "@libsql/client";
 import type { Goal } from "./goals";
 import { restoreActivities } from "./activity-database";
+import { isGoalIcon } from "./goal-icons";
 
 export type GoalFields = Pick<Goal, "name" | "description" | "icon" | "color">;
 
@@ -13,8 +14,7 @@ export function parseGoalFields(value: unknown): GoalFields {
     goal.name.trim().length > 100 ||
     typeof goal.description !== "string" ||
     goal.description.length > 1000 ||
-    typeof goal.icon !== "string" ||
-    !/^[a-z0-9-]+-fill$/.test(goal.icon) ||
+    !isGoalIcon(goal.icon) ||
     typeof goal.color !== "string" ||
     !/^#[a-f\d]{6}$/i.test(goal.color)
   )

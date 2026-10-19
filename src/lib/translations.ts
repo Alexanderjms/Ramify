@@ -1,4 +1,12 @@
 export const english: Record<string, string> = {
+  Meta: "Goal",
+  "No se pudo cargar la vista en Turso.": "Could not load the view from Turso.",
+  "Tu meta empieza aquí": "Your goal starts here",
+  "Divide tu objetivo en metas más pequeñas. Añade la primera para empezar tu diagrama.":
+    "Break your goal into smaller steps. Add the first one to start your diagram.",
+  "Nombre de la primera meta": "First goal name",
+  "Ej. Practicar 15 minutos al día": "E.g. Practice for 15 minutes a day",
+  "Añadir primera meta": "Add first goal",
   "No se pudo guardar la meta. Inténtalo de nuevo; el formulario se ha conservado.":
     "Could not save the goal. Please try again; your form has been preserved.",
   "No se pudieron cargar las metas de Turso.":
@@ -27,7 +35,7 @@ export const english: Record<string, string> = {
   "No se pudo guardar la vista en Turso.": "Could not save the view to Turso.",
   Reintentar: "Retry",
   "Sin actividad": "No activity",
-  "Iconos Bootstrap Fill": "Bootstrap Fill icons",
+  "Iconos Bootstrap": "Bootstrap icons",
   iconos: "icons",
   "Logo de Ramify": "Ramify logo",
   "Progreso de": "Progress for",

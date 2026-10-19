@@ -123,7 +123,7 @@ export default function GoalDiagramNode({
               event.currentTarget.setCustomValidity(
                 event.currentTarget.value.trim()
                   ? ""
-                  : "Escribe el nombre de la meta.",
+                  : t("Escribe el nombre de la meta."),
               )
             }
           />

@@ -1,14 +1,10 @@
 "use client";
 
-import bootstrapIcons from "bootstrap-icons/font/bootstrap-icons.json";
+import { goalIcons } from "@/lib/goal-icons";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
-
-const icons = Object.keys(bootstrapIcons)
-  .filter((name) => name.endsWith("-fill"))
-  .sort();
 
 export default function IconSearch({
   icon,
@@ -26,7 +22,7 @@ export default function IconSearch({
   onClose: () => void;
 }) {
   const { t } = useLanguage();
-  const results = icons.filter((name) =>
+  const results = goalIcons.filter((name) =>
     name.includes(query.trim().toLowerCase().replaceAll(" ", "-")),
   );
 
@@ -49,7 +45,7 @@ export default function IconSearch({
       </label>
       <div
         role="group"
-        aria-label={t("Iconos Bootstrap Fill")}
+        aria-label={t("Iconos Bootstrap")}
         className="app-scrollbar grid max-h-[min(320px,40svh)] grid-cols-6 gap-1.5 overflow-y-auto overscroll-contain p-1 pr-2 sm:grid-cols-9"
       >
         {results.map((name) => (

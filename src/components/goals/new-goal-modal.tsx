@@ -26,7 +26,6 @@ export default function NewGoalModal({
   const { t } = useLanguage();
   const [icon, setIcon] = useState(initialGoal?.icon ?? "flag-fill");
   const [color, setColor] = useState(initialGoal?.color ?? "#FFFFFF");
-  const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
@@ -47,7 +46,6 @@ export default function NewGoalModal({
         setIcon(initialGoal?.icon ?? "flag-fill");
         setColor(initialGoal?.color ?? "#FFFFFF");
         setError("");
-        setFormKey((key) => key + 1);
       }}
       onCancel={(event) => {
         if (submitting.current) event.preventDefault();
@@ -94,7 +92,6 @@ export default function NewGoalModal({
       <form
         aria-busy={pending}
         ref={form}
-        key={formKey}
         onSubmit={async (event) => {
           event.preventDefault();
           if (submitting.current) return;

@@ -253,7 +253,9 @@ export default function GoalDiagram({
         );
       }}
     >
-      <div className="goal-create-action">{addButton("", "la meta")}</div>
+      {!!activities.length && (
+        <div className="goal-create-action">{addButton("", "la meta")}</div>
+      )}
       <GoalDiagramSettings
         id={settingsId}
         onEdit={onEditGoal}
@@ -279,19 +281,25 @@ export default function GoalDiagram({
         onCloseEditor={closeEditor}
         addButton={addButton}
       />
-      <GoalDiagramZoomControls
-        id={zoomId}
-        zoom={zoom}
-        setZoom={setZoom}
-        onReset={reset}
-        onFit={fit}
-        onExpandAll={onExpandAll}
-        onCollapseAll={collapseAll}
-      />
+      {!!activities.length && (
+        <GoalDiagramZoomControls
+          id={zoomId}
+          zoom={zoom}
+          setZoom={setZoom}
+          onReset={reset}
+          onFit={fit}
+          onExpandAll={onExpandAll}
+          onCollapseAll={collapseAll}
+        />
+      )}
       <GoalContextMenu
         context={context}
         onClose={() => setContext(null)}
         onCreate={() => {
+          if (!activities.length) {
+            viewport.current?.querySelector<HTMLInputElement>("input")?.focus();
+            return;
+          }
           createTrigger.current =
             viewport.current?.parentElement?.querySelector<HTMLButtonElement>(
               ".goal-create-action button",

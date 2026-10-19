@@ -22,6 +22,12 @@ button,
   user-select: none;
 }
 
+dialog,
+dialog::backdrop,
+[popover] {
+  cursor: default;
+}
+
 @media (pointer: coarse) {
   input:not(
     [type="checkbox"],

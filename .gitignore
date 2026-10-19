@@ -14,6 +14,8 @@ node_modules/
 !/scripts/generate-app-icons.mjs
 !/scripts/check-pwa.mjs
 !/scripts/check-file-security.mjs
+!/scripts/check-goal-icons.mjs
+!/scripts/check-goal-ui.mjs
 .next/
 /out/
 /build
@@ -28,5 +30,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /docs/
-/db/migrations/
+/db/migrations/*
+!/db/migrations/0005_all_goal_icons.sql
 /scripts/**/*.cjs
