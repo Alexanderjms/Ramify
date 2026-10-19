@@ -49,7 +49,6 @@ export async function loadGoalView(
   userId: string,
   goalId: string,
 ): Promise<GoalView> {
-  // ponytail: goal IDs are browser-local; add the goal FK when goals move to Turso.
   if (!validGoalId(goalId)) throw new Error("Invalid goal ID");
   const result = await client.execute({
     sql: "SELECT zoom, scroll_left, scroll_top, collapsed_ids FROM goal_view_preferences WHERE user_id = ? AND goal_id = ?",

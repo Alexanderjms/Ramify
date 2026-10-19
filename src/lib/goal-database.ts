@@ -27,8 +27,6 @@ export function parseGoalFields(value: unknown): GoalFields {
   };
 }
 
-// Browser-local IDs (including demo IDs) can repeat across accounts.
-// Scope database identities to the account, including migrated browser IDs.
 export function databaseId(userId: string, goalId: string) {
   return JSON.stringify([userId, goalId]);
 }

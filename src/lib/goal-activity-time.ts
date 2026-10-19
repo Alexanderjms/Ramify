@@ -3,7 +3,6 @@ export function formatGoalActivityTime(
   language: "es" | "en",
   now = Date.now(),
 ): { text: string; title?: string } | undefined {
-  // Missing timestamps belong to legacy goals; never infer dates from their labels.
   if (timestamp === undefined) return undefined;
   if (
     timestamp === null ||

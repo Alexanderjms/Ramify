@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   icons: {
     icon: { url: "/Logo.svg?v=ramify", type: "image/svg+xml" },
     shortcut: "/Logo.svg?v=ramify",
+    apple: {
+      url: "/icons/apple-touch-icon.png",
+      sizes: "180x180",
+      type: "image/png",
+    },
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Ramify",
+    statusBarStyle: "black-translucent",
   },
 };
 

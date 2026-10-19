@@ -91,7 +91,6 @@ export async function writeFileChunk(
     data.length !== expected
   )
     throw new FileError(400);
-  // Ownership and upload state are rechecked in the write to close a concurrent finalize/delete race.
   const result = await client.execute({
     sql: `INSERT INTO goal_file_chunks (file_id, part, data)
       SELECT id, ?, ? FROM goal_files WHERE id = ? AND user_id = ? AND ready = 0

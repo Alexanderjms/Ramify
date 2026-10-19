@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useGoals } from "./goals-provider";
 import {
   isStoredGoalFile,
   validResourceUrl,
@@ -33,6 +34,7 @@ export default function BranchResourceField({
   setError: (error: string) => void;
 }) {
   const { t, language } = useLanguage();
+  const { userId } = useGoals();
   const fileInput = useRef<HTMLInputElement>(null);
 
   return (
@@ -55,7 +57,11 @@ export default function BranchResourceField({
                   if (!isStoredGoalFile(resource.url)) return;
                   event.preventDefault();
                   try {
-                    await downloadGoalFile(resource.url, resource.fileName!);
+                    await downloadGoalFile(
+                      resource.url,
+                      resource.fileName!,
+                      userId,
+                    );
                   } catch {
                     setError(
                       "No se pudo descargar el archivo. Comprueba tu conexión e inténtalo de nuevo.",
@@ -82,7 +88,7 @@ export default function BranchResourceField({
                   }));
                   if (removed && isStoredGoalFile(resource.url)) {
                     try {
-                      await removeGoalFile(resource.url);
+                      await removeGoalFile(resource.url, userId);
                     } catch {
                       setError(
                         "Se quitó el recurso, pero no se pudo liberar el archivo. Se reintentará al sincronizar.",
@@ -195,7 +201,7 @@ export default function BranchResourceField({
           }
           setReadingFile(true);
           try {
-            const url = await saveGoalFile(file);
+            const url = await saveGoalFile(file, userId);
             const saved = update((current) => ({
               resources: [
                 ...(current.resources ?? []),
@@ -206,7 +212,7 @@ export default function BranchResourceField({
                 },
               ],
             }));
-            if (!saved) await removeGoalFile(url);
+            if (!saved) await removeGoalFile(url, userId);
           } catch {
             setError(
               "No se pudo subir el archivo. Comprueba tu conexión e inténtalo de nuevo.",

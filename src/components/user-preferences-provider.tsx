@@ -119,9 +119,7 @@ export default function UserPreferencesProvider({
       if (Object.keys(pending.current).length)
         localStorage.setItem(storageKey, JSON.stringify(pending.current));
       else localStorage.removeItem(storageKey);
-    } catch {
-      // The in-memory queue still works when browser storage is disabled.
-    }
+    } catch {}
   }, [storageKey]);
 
   const updatePreferences = useCallback(
@@ -158,9 +156,7 @@ export default function UserPreferencesProvider({
           ...parsePreferencesPatch(JSON.parse(saved)),
           ...pending.current,
         };
-    } catch {
-      // Invalid local data is never sent to the API.
-    }
+    } catch {}
 
     if (Object.keys(pending.current).length)
       queryClient.setQueryData<PreferencesCache>(queryKey, (current) => ({
@@ -212,8 +208,6 @@ export default function UserPreferencesProvider({
       clearTimeout(timer);
       window.removeEventListener("online", onOnline);
       schedule.current = () => {};
-      // Pending patches were persisted before sending. Reloads and account
-      // switches resume only this user's queue, never another account's.
     };
   }, [mutateAsync, persist, queryClient, queryKey, storageKey]);
 

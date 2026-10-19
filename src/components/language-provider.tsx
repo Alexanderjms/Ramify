@@ -49,9 +49,7 @@ export default function LanguageProvider({
   const setLanguage = useCallback((value: Language) => {
     try {
       localStorage.setItem(key, value);
-    } catch {
-      // Public pages still render when browser storage is unavailable.
-    }
+    } catch {}
     window.dispatchEvent(new Event("ramify:language-updated"));
   }, []);
   const t = (text: string) =>
@@ -63,8 +61,6 @@ export default function LanguageProvider({
   );
 }
 
-// Account consumers use the same hook as public pages, without writing the
-// account's default language back to the server during initial hydration.
 export function AccountLanguageBridge({
   language,
   onChange,

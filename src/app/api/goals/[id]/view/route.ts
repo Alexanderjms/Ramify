@@ -48,7 +48,6 @@ export async function PUT(
     return json({ error: "Forbidden" }, 403);
   const { id } = await params;
   if (!validGoalId(id)) return json({ error: "Invalid goal" }, 400);
-  // Bound the request body even if Content-Length is omitted or incorrect.
   let size = 0;
   const chunks: Uint8Array[] = [];
   const reader = request.body?.getReader();

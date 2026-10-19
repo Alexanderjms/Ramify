@@ -193,7 +193,6 @@ export async function saveActivities(
     const files = new Map(results[4].rows.map((row) => [String(row.id), row]));
     const statements: InStatement[] = [];
     const now = Date.now();
-    // Detach only changed parents before reparenting, so retained descendants never cascade away.
     for (const { id, parent } of tree) {
       if (oldActivities.has(id) && oldActivities.get(id)!.parent_id !== parent)
         statements.push({

@@ -11,6 +11,9 @@ node_modules/
 !/scripts/check-priority.mjs
 !/scripts/check-tooltips.mjs
 !/scripts/check-responsive.mjs
+!/scripts/generate-app-icons.mjs
+!/scripts/check-pwa.mjs
+!/scripts/check-file-security.mjs
 .next/
 /out/
 /build

@@ -1,12 +1,20 @@
 import { isStoredGoalFile, type GoalActivity } from "./goal-activities";
+import { goalsStorageKey } from "./goal-storage";
 
 export const maxGoalFileSize = 20 * 1024 * 1024;
 const chunkSize = 256 * 1024;
 
 async function fileRequest<T>(
+  userId: string,
   mode: IDBTransactionMode,
   run: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
+  if (
+    !userId ||
+    localStorage.getItem(`${goalsStorageKey}:legacy-owner`) !==
+      `${goalsStorageKey}:${userId}`
+  )
+    throw new Error("Legacy attachment ownership could not be verified");
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open("ramify:files", 1);
     request.onupgradeneeded = () => request.result.createObjectStore("files");
@@ -26,11 +34,30 @@ async function fileRequest<T>(
   }
 }
 
-async function uploadFile(file: File, url: string): Promise<string> {
+async function fetchFile(
+  userId: string,
+  url: string,
+  init: RequestInit = {},
+  query = "",
+) {
+  if (!userId) throw new Error("An authenticated account is required");
+  const headers = new Headers(init.headers);
+  headers.set("X-Ramify-User-Id", userId);
+  return fetch(`/api/files/${encodeURIComponent(url)}${query}`, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
+}
+
+async function uploadFile(
+  file: File,
+  url: string,
+  userId: string,
+): Promise<string> {
   if (file.size > maxGoalFileSize)
     throw new Error("El archivo debe pesar como máximo 20 MB.");
-  const endpoint = `/api/files/${encodeURIComponent(url)}`;
-  const start = await fetch(endpoint, {
+  const start = await fetchFile(userId, url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: file.name, type: file.type, size: file.size }),
@@ -38,50 +65,62 @@ async function uploadFile(file: File, url: string): Promise<string> {
   if (!start.ok) throw new Error("Could not upload file");
   if (!(await start.json()).ready) {
     for (let offset = 0; offset < file.size; offset += chunkSize) {
-      const response = await fetch(`${endpoint}?part=${offset / chunkSize}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: file.slice(offset, offset + chunkSize),
-      });
+      const response = await fetchFile(
+        userId,
+        url,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: file.slice(offset, offset + chunkSize),
+        },
+        `?part=${offset / chunkSize}`,
+      );
       if (!response.ok) throw new Error("Could not upload file chunk");
     }
-    const complete = await fetch(endpoint, { method: "PATCH" });
+    const complete = await fetchFile(userId, url, { method: "PATCH" });
     if (!complete.ok) throw new Error("Could not finish upload");
   }
   return url;
 }
 
-export async function saveGoalFile(file: File): Promise<string> {
+export async function saveGoalFile(
+  file: File,
+  userId: string,
+): Promise<string> {
   const url = `ramify-file:${crypto.randomUUID()}`;
   try {
-    return await uploadFile(file, url);
+    return await uploadFile(file, url, userId);
   } catch (error) {
-    await fetch(`/api/files/${encodeURIComponent(url)}`, {
+    await fetchFile(userId, url, {
       method: "DELETE",
     }).catch(() => {});
     throw error;
   }
 }
 
-export async function removeGoalFile(url: string): Promise<void> {
-  const response = await fetch(`/api/files/${encodeURIComponent(url)}`, {
+export async function removeGoalFile(
+  url: string,
+  userId: string,
+): Promise<void> {
+  const response = await fetchFile(userId, url, {
     method: "DELETE",
   });
   if (!response.ok) throw new Error("Could not remove file");
-  await fileRequest("readwrite", (store) => store.delete(url)).catch(() => {});
+  await fileRequest(userId, "readwrite", (store) => store.delete(url)).catch(
+    () => {},
+  );
 }
 
 export async function downloadGoalFile(
   url: string,
   name: string,
+  userId: string,
 ): Promise<void> {
-  const response = await fetch(`/api/files/${encodeURIComponent(url)}`, {
-    cache: "no-store",
-  });
+  const response = await fetchFile(userId, url);
   let file: Blob | undefined;
   if (response.ok) file = await response.blob();
   else if (response.status === 404)
-    file = await fileRequest<Blob | undefined>("readonly", (store) =>
+    file = await fileRequest<Blob | undefined>(userId, "readonly", (store) =>
       store.get(url),
     );
   if (!(file instanceof Blob)) throw new Error("Could not download file");
@@ -97,6 +136,7 @@ export async function downloadGoalFile(
 
 export async function migrateGoalFiles(
   activities: GoalActivity[],
+  userId: string,
 ): Promise<GoalActivity[]> {
   const migrated: GoalActivity[] = [];
   for (const activity of activities) {
@@ -107,18 +147,19 @@ export async function migrateGoalFiles(
         continue;
       }
       if (isStoredGoalFile(resource.url)) {
-        const response = await fetch(
-          `/api/files/${encodeURIComponent(resource.url)}`,
-          { method: "HEAD", cache: "no-store" },
-        );
+        const response = await fetchFile(userId, resource.url, {
+          method: "HEAD",
+        });
         if (response.ok) {
           resources.push(resource);
           continue;
         }
         if (response.status !== 404)
           throw new Error("Could not verify attachment");
-        const blob = await fileRequest<Blob | undefined>("readonly", (store) =>
-          store.get(resource.url),
+        const blob = await fileRequest<Blob | undefined>(
+          userId,
+          "readonly",
+          (store) => store.get(resource.url),
         );
         if (!(blob instanceof Blob))
           throw new Error(
@@ -127,6 +168,7 @@ export async function migrateGoalFiles(
         await uploadFile(
           new File([blob], resource.fileName, { type: blob.type }),
           resource.url,
+          userId,
         );
         resources.push(resource);
       } else {
@@ -134,13 +176,13 @@ export async function migrateGoalFiles(
         const file = new File([await response.blob()], resource.fileName, {
           type: "application/octet-stream",
         });
-        resources.push({ ...resource, url: await saveGoalFile(file) });
+        resources.push({ ...resource, url: await saveGoalFile(file, userId) });
       }
     }
     migrated.push({
       ...activity,
       resources,
-      children: await migrateGoalFiles(activity.children ?? []),
+      children: await migrateGoalFiles(activity.children ?? [], userId),
     });
   }
   return migrated;

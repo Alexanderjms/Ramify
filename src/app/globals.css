@@ -23,7 +23,6 @@ button,
 }
 
 @media (pointer: coarse) {
-  /* Keep iOS from zooming into compact form fields without disabling page zoom. */
   input:not(
     [type="checkbox"],
     [type="radio"],

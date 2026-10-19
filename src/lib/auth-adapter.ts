@@ -85,7 +85,6 @@ export function TursoAdapter(getClient: () => Client): Adapter {
           account.type,
         ],
       });
-      // GitHub tokens are not persisted: the app only needs the verified account identity.
     },
     async unlinkAccount({ provider, providerAccountId }) {
       await getClient().execute({

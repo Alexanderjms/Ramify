@@ -30,6 +30,7 @@ type ActivityUpdate =
 type GoalFields = Pick<Goal, "name" | "description" | "icon" | "color">;
 type RemoteGoalsSnapshot = { goals: Goal[]; revision: number };
 const GoalsContext = createContext<{
+  userId: string;
   goals: Goal[];
   loading: boolean;
   openCreateGoal: () => void;
@@ -45,8 +46,7 @@ function subscribeGoals(key: string, callback: () => void) {
       const legacyOwnerKey = `${goalsStorageKey}:legacy-owner`;
       const owner = localStorage.getItem(legacyOwnerKey);
       const legacy = localStorage.getItem(goalsStorageKey);
-      if (legacy !== null && (owner === null || owner === key)) {
-        localStorage.setItem(legacyOwnerKey, key);
+      if (legacy !== null && owner === key) {
         localStorage.setItem(key, legacy);
       } else localStorage.setItem(key, "[]");
     }
@@ -87,7 +87,11 @@ async function persistGoal(userId: string, id: string, changes?: GoalFields) {
   if (!response.ok) throw new Error("Could not save goal");
 }
 
-function cleanupFiles(removed: GoalActivity[], remaining: Goal[]) {
+function cleanupFiles(
+  removed: GoalActivity[],
+  remaining: Goal[],
+  userId: string,
+) {
   const retainedFiles = new Set(
     remaining.flatMap((goal) =>
       flattenActivities(goal.activities ?? []).flatMap((activity) =>
@@ -102,8 +106,9 @@ function cleanupFiles(removed: GoalActivity[], remaining: Goal[]) {
       )
       .filter((url) => isStoredGoalFile(url) && !retainedFiles.has(url)),
   );
-  // Remove blobs only after their references were successfully removed from localStorage.
-  void Promise.allSettled([...files].map(removeGoalFile)).then((results) => {
+  void Promise.allSettled(
+    [...files].map((url) => removeGoalFile(url, userId)),
+  ).then((results) => {
     if (results.some((result) => result.status === "rejected"))
       console.warn("Some deleted attachments could not be cleaned up.");
   });
@@ -208,7 +213,6 @@ export default function GoalsProvider({
     staleTime: 15_000,
     refetchInterval: 15_000,
     refetchIntervalInBackground: false,
-    // Refresh is coordinated by the visible/online listeners below.
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: false,
@@ -306,7 +310,7 @@ export default function GoalsProvider({
         try {
           const activities = source.activitiesInitialized
             ? (source.activities ?? [])
-            : await migrateGoalFiles(source.activities ?? []);
+            : await migrateGoalFiles(source.activities ?? [], userId);
           if (!active.current || deleting.current.has(id)) return;
           const { version } = await saveActivitiesRemote({
             id,
@@ -391,6 +395,7 @@ export default function GoalsProvider({
       storeGoals,
       saveActivitiesRemote,
       updateRemoteCache,
+      userId,
     ],
   );
 
@@ -455,7 +460,6 @@ export default function GoalsProvider({
           completedTasks: 0,
         });
     }
-    // Normalize counts before comparing, so unchanged refetches stay silent.
     const normalized = parseGoals(JSON.stringify(merged));
     if (JSON.stringify(normalized) !== JSON.stringify(current))
       storeGoals(normalized);
@@ -502,6 +506,7 @@ export default function GoalsProvider({
   return (
     <GoalsContext
       value={{
+        userId,
         goals,
         loading: !loaded,
         openCreateGoal: () => {
@@ -601,7 +606,7 @@ export default function GoalsProvider({
               delete next[id];
               return next;
             });
-            cleanupFiles(goal.activities ?? [], remaining);
+            cleanupFiles(goal.activities ?? [], remaining, userId);
           } finally {
             endMetadataMutation();
             if (deletedRemotely)
@@ -638,7 +643,7 @@ export default function GoalsProvider({
             delete next[goalId];
             return next;
           });
-          cleanupFiles([branch], remaining);
+          cleanupFiles([branch], remaining, userId);
           return flattenActivities([branch]).map((activity) => activity.id);
         },
         updateActivities: (id, activities) => {

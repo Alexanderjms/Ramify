@@ -532,7 +532,6 @@ export const WarmTooltipGroup = forwardRef<
             <motion.span
               popover="manual"
               ref={(element) => {
-                // Focus can open a tooltip while its parent popover is still opening.
                 requestAnimationFrame(() => {
                   if (element?.isConnected && !element.matches(":popover-open"))
                     element.showPopover();
@@ -795,7 +794,6 @@ const Trigger: React.FC<TriggerProps> = ({
         triggerRef.current = element;
         const ref = children.props.ref as React.Ref<HTMLElement> | undefined;
         if (typeof ref === "function") return ref(element);
-        // React 19 accepts object refs on the cloned child just like callback refs.
         // eslint-disable-next-line react-hooks/immutability
         if (ref) ref.current = element;
       },

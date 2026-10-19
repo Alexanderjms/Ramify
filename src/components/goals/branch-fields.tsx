@@ -11,10 +11,7 @@ import {
   type GoalActivity,
   type GoalActivityChanges,
 } from "@/lib/goal-activities";
-import { ActivityStatus } from "./goal-diagram";
-import Select from "@/components/select";
-import JellyRadio from "@/components/JellyRadio";
-import DatePicker from "@/components/date-picker";
+import BranchProperties from "./branch-properties";
 import BranchColorPicker from "./branch-color-picker";
 import { useLanguage } from "@/components/language-provider";
 import BranchTextField, { type BranchTextFieldName } from "./branch-text-field";
@@ -251,99 +248,7 @@ export default function BranchFields({
           {t(error)}
         </p>
       )}
-      <dl className="branch-properties">
-        <div>
-          <dt>{t("Estado")}</dt>
-          <dd data-field="status">
-            <Select
-              label="Estado"
-              value={activity.status}
-              options={[
-                {
-                  value: "pending",
-                  label: "Pendiente",
-                  icon: <ActivityStatus status="pending" />,
-                },
-                {
-                  value: "progress",
-                  label: "En proceso",
-                  icon: <ActivityStatus status="progress" />,
-                },
-                {
-                  value: "completed",
-                  label: "Completada",
-                  icon: <ActivityStatus status="completed" />,
-                },
-              ]}
-              icon={<ActivityStatus status={activity.status} />}
-              onChange={(status) => update({ status })}
-            />
-          </dd>
-        </div>
-        <div>
-          <dt>{t("Prioridad")}</dt>
-          <dd data-field="priority">
-            <JellyRadio
-              ariaLabel={t("Prioridad")}
-              value={activity.priority ?? "medium"}
-              size="sm"
-              gap={4}
-              swell={0.12}
-              barge={3}
-              items={[
-                {
-                  value: "low",
-                  label: t("Baja"),
-                  icon: (
-                    <span
-                      aria-hidden="true"
-                      className="size-2 shrink-0 rounded-full bg-blue-500"
-                    />
-                  ),
-                },
-                {
-                  value: "medium",
-                  label: t("Media"),
-                  icon: (
-                    <span
-                      aria-hidden="true"
-                      className="size-2 shrink-0 rounded-full bg-orange-500"
-                    />
-                  ),
-                },
-                {
-                  value: "high",
-                  label: t("Alta"),
-                  icon: (
-                    <span
-                      aria-hidden="true"
-                      className="size-2 shrink-0 rounded-full bg-green-500"
-                    />
-                  ),
-                },
-              ]}
-              onChange={(priority) => {
-                if (
-                  priority === "low" ||
-                  priority === "medium" ||
-                  priority === "high"
-                )
-                  update({ priority });
-              }}
-            />
-          </dd>
-        </div>
-        <div>
-          <dt>{t("Fecha objetivo")}</dt>
-          <dd data-field="targetDate">
-            <DatePicker
-              label="Fecha objetivo"
-              value={activity.targetDate ?? ""}
-              onChange={(targetDate) => update({ targetDate })}
-            />
-          </dd>
-        </div>
-      </dl>
+      <BranchProperties activity={activity} onUpdate={update} />
       <BranchResourceField
         activity={activity}
         addingResource={addingResource}

@@ -140,7 +140,7 @@ export default function Sidebar({
                     return (
                       <Link
                         key={goal.id}
-                        href={`/metas/${goal.id}`}
+                        href={`/metas/${encodeURIComponent(goal.id!)}`}
                         aria-current={selected ? "page" : undefined}
                         aria-label={goal.name}
                         className={`${selected ? "" : "paint-hover"} flex min-w-0 items-center gap-2 rounded px-2 py-2 text-xs ${selected ? "bg-zinc-900 text-white" : "text-zinc-400"}`}

@@ -18,6 +18,8 @@ async function handle(request: Request, params: Promise<{ id: string }>) {
   const session = await auth();
   if (!session?.user?.id) return new Response(null, { status: 401 });
   const userId = session.user.id;
+  if (request.headers.get("X-Ramify-User-Id") !== userId)
+    return new Response(null, { status: 403 });
   const { id } = await params;
   const client = getDatabase();
   try {
