@@ -101,7 +101,9 @@ export default function IconPicker({
             ),
           );
           setColorPage(pendingPage.current);
+          flushSync(() => setOpen(true));
           dialog.current?.showModal();
+          dialog.current?.querySelector("input")?.focus();
         }}
         className="paint-hover flex min-h-10 cursor-pointer items-center gap-3 rounded border border-zinc-800 bg-black px-3 py-2 text-xs"
       >
@@ -115,10 +117,10 @@ export default function IconPicker({
         ref={dialog}
         id={id}
         aria-labelledby={`${id}-title`}
-        onToggle={(event) => setOpen(event.newState === "open")}
         onCancel={(event) => event.stopPropagation()}
         onClose={(event) => {
           event.stopPropagation();
+          setOpen(false);
           paletteAnimation.current?.cancel();
         }}
         onClick={(event) => {
