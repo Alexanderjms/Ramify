@@ -268,7 +268,7 @@ export default function BranchFields({
         </FormError>
       )}
       {syncStatus === undefined && syncPending && (
-        <p role="status" className="text-xs leading-5 text-zinc-400">
+        <p role="status" className="sr-only">
           {t("Guardado en este navegador; pendiente de sincronización.")}
         </p>
       )}
