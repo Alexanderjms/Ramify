@@ -1,4 +1,3 @@
-// Text stays plain data: React escapes output and SQL values use bound parameters.
 export function validText(
   value: unknown,
   maxLength: number,

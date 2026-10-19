@@ -12,6 +12,10 @@ import {
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import GoalsSyncNotifications from "./goals-sync-notifications";
+import SyncConflictDialog, {
+  type SyncConflictDialogHandle,
+} from "./sync-conflict-dialog";
 import type { Goal } from "@/lib/goals";
 import {
   flattenActivities,
@@ -24,8 +28,7 @@ import {
 import { migrateGoalFiles, removeGoalFile } from "@/lib/goal-files";
 import { goalsStorageKey, parseGoals } from "@/lib/goal-storage";
 import NewGoalModal from "./new-goal-modal";
-import { useLanguage } from "@/components/language-provider";
-import { ErrorToast, FormError, SyncToast } from "@/components/app-feedback";
+import { ErrorToast } from "@/components/app-feedback";
 import { InputError, errorMessage, responseError } from "@/lib/feedback";
 
 type ActivityUpdate =
@@ -187,14 +190,11 @@ export default function GoalsProvider({
   const [syncErrors, setSyncErrors] = useState<Record<string, number>>({});
   const [syncAttempt, setSyncAttempt] = useState(0);
   const [feedbackGoalId, setFeedbackGoalId] = useState<string | null>(null);
-  const conflictDialog = useRef<HTMLDialogElement>(null);
-  const [conflictError, setConflictError] = useState("");
-  const [resolvingConflict, setResolvingConflict] = useState(false);
+  const conflictDialog = useRef<SyncConflictDialogHandle>(null);
   const inFlight = useRef(new Map<string, Promise<void>>());
   const deleting = useRef(new Set<string>());
   const initialized = useRef(false);
   const active = useRef(true);
-  const { t } = useLanguage();
   const canRefreshGoals = useCallback(
     () =>
       typeof document !== "undefined" &&
@@ -529,8 +529,7 @@ export default function GoalsProvider({
       ([, status]) => status === 409,
     );
     if (conflicts.length && !overwrite) {
-      setConflictError("");
-      conflictDialog.current?.showModal();
+      conflictDialog.current?.open();
       return;
     }
     if (conflicts.length) {
@@ -771,85 +770,17 @@ export default function GoalsProvider({
         onRetry={() => void refetchGoals()}
       />
       {children}
-      {goals
-        .filter((goal) => goal.id !== feedbackGoalId)
-        .map((goal) => (
-          <SyncToast
-            key={goal.id}
-            id={`goal-update:${userId}:${goal.id}`}
-            pending={Boolean(goal.syncPending)}
-            failed={goal.id !== undefined && syncErrors[goal.id] !== undefined}
-          />
-        ))}
-      {Object.entries(syncErrors)
-        .filter(([id]) => id !== feedbackGoalId)
-        .map(([id, status]) => (
-          <ErrorToast
-            key={id}
-            id={`goal-sync:${userId}:${id}`}
-            message={errorMessage(
-              { status },
-              "Cambios pendientes en este navegador. No se pudieron guardar en Turso.",
-            )}
-            onRetry={() => void retrySync()}
-          />
-        ))}
-      <dialog
+      <GoalsSyncNotifications
+        goals={goals}
+        userId={userId}
+        syncErrors={syncErrors}
+        feedbackGoalId={feedbackGoalId}
+        onRetry={() => void retrySync()}
+      />
+      <SyncConflictDialog
         ref={conflictDialog}
-        aria-labelledby="sync-conflict-title"
-        className="new-goal-modal fixed m-auto w-[calc(100%-32px)] max-w-md rounded-lg border border-zinc-800 bg-black p-6 text-white"
-        onCancel={(event) => {
-          if (resolvingConflict) event.preventDefault();
-        }}
-      >
-        <h2 id="sync-conflict-title" className="text-lg font-semibold">
-          {t("Conflicto de sincronización")}
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-zinc-400">
-          {t(
-            "Otra sesión modificó el diagrama. ¿Reemplazar su versión con tus cambios locales?",
-          )}
-        </p>
-        <FormError>{conflictError && t(conflictError)}</FormError>
-        <form
-          className="mt-5 flex justify-end gap-3"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            if (resolvingConflict) return;
-            setResolvingConflict(true);
-            setConflictError("");
-            try {
-              await retrySync(true);
-              conflictDialog.current?.close();
-            } catch (error) {
-              setConflictError(
-                errorMessage(
-                  error,
-                  "No se pudieron cargar las metas de Turso.",
-                ),
-              );
-            } finally {
-              setResolvingConflict(false);
-            }
-          }}
-        >
-          <button
-            type="button"
-            className="cursor-pointer rounded border border-zinc-700 px-3 py-2 text-xs"
-            disabled={resolvingConflict}
-            onClick={() => conflictDialog.current?.close()}
-          >
-            {t("Cancelar")}
-          </button>
-          <button
-            type="submit"
-            className="cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs"
-            disabled={resolvingConflict}
-          >
-            {t(resolvingConflict ? "Guardando…" : "Reemplazar versión")}
-          </button>
-        </form>
-      </dialog>
+        onOverwrite={() => retrySync(true)}
+      />
       <NewGoalModal
         dialogRef={dialog}
         onCreate={async (goal) => {

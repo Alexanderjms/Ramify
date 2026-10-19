@@ -8,14 +8,6 @@ node_modules/
 !.yarn/versions
 /coverage
 *.mjs
-!/scripts/check-priority.mjs
-!/scripts/check-tooltips.mjs
-!/scripts/check-responsive.mjs
-!/scripts/generate-app-icons.mjs
-!/scripts/check-pwa.mjs
-!/scripts/check-file-security.mjs
-!/scripts/check-goal-icons.mjs
-!/scripts/check-goal-ui.mjs
 .next/
 /out/
 /build

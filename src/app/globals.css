@@ -61,7 +61,6 @@ textarea[aria-invalid="true"],
   flex-wrap: nowrap;
 }
 
-/* Animate the blob, not the text's width or clipping rectangle. */
 [data-sonner-toast] .gooey-wrapper {
   font-family: var(--font-geist-sans), sans-serif;
   width: max-content !important;
