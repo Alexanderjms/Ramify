@@ -4,7 +4,7 @@ import { goalIcons } from "@/lib/goal-icons";
 import Icon from "@/components/icon";
 import PaintHover from "@/components/paint-hover";
 import { useLanguage } from "@/components/language-provider";
-import { TooltipButton } from "@/components/tooltip";
+import IconGrid from "./icon-grid";
 
 export default function IconSearch({
   icon,
@@ -43,31 +43,13 @@ export default function IconSearch({
           className="min-w-0 flex-1 bg-transparent py-2.5 text-xs outline-none placeholder:text-zinc-500"
         />
       </label>
-      <div
-        role="group"
-        aria-label={t("Iconos Bootstrap")}
-        className="app-scrollbar grid max-h-[min(320px,40svh)] grid-cols-6 gap-1.5 overflow-y-auto overscroll-contain p-1 pr-2 sm:grid-cols-9"
-      >
-        {results.map((name) => (
-          <TooltipButton
-            key={name}
-            type="button"
-            title={name}
-            aria-label={name}
-            aria-pressed={icon === name}
-            onClick={() => onIconChange(name)}
-            className={`paint-hover flex size-9 cursor-pointer items-center justify-center rounded border ${icon === name ? "border-zinc-500 bg-zinc-800" : "border-transparent"}`}
-          >
-            <PaintHover>
-              <i
-                aria-hidden="true"
-                className={`bi bi-${name} text-lg leading-none`}
-                style={{ color }}
-              />
-            </PaintHover>
-          </TooltipButton>
-        ))}
-      </div>
+      <IconGrid
+        key={query}
+        results={results}
+        icon={icon}
+        color={color}
+        onIconChange={onIconChange}
+      />
       <div className="mt-5 flex items-center justify-between gap-4 border-t border-zinc-800 pt-4">
         <p role="status" className="text-[11px] text-zinc-500">
           {results.length

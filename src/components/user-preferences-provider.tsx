@@ -11,7 +11,9 @@ import {
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AccountLanguageBridge, useLanguage } from "./language-provider";
+import { AccountLanguageBridge } from "./language-provider";
+import { ErrorToast } from "./app-feedback";
+import { errorMessage } from "@/lib/feedback";
 import DashboardLoadingSkeleton from "./dashboard/loading-skeleton";
 import {
   defaultUserPreferences,
@@ -41,7 +43,8 @@ export default function UserPreferencesProvider({
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => preferencesQueryKey(userId), [userId]);
   const pending = useRef<Partial<UserPreferences>>({});
-  const [syncError, setSyncError] = useState(false);
+  const [syncError, setSyncError] = useState<unknown>(null);
+  const [storageError, setStorageError] = useState<unknown>(null);
   const schedule = useRef<(delay?: number) => void>(() => {});
   const storageKey = `ramify:preferences:pending:${userId}`;
 
@@ -125,7 +128,10 @@ export default function UserPreferencesProvider({
       if (Object.keys(pending.current).length)
         localStorage.setItem(storageKey, JSON.stringify(pending.current));
       else localStorage.removeItem(storageKey);
-    } catch {}
+      setStorageError(null);
+    } catch (error) {
+      setStorageError(error);
+    }
   }, [storageKey]);
 
   const updatePreferences = useCallback(
@@ -191,11 +197,11 @@ export default function UserPreferencesProvider({
           if (pending.current[key] === patch[key]) delete pending.current[key];
         persist();
         failures = 0;
-        setSyncError(false);
-      } catch {
+        setSyncError(null);
+      } catch (error) {
         if (!active) return;
         failures += 1;
-        setSyncError(true);
+        setSyncError(error);
       } finally {
         busy = false;
         if (active && Object.keys(pending.current).length)
@@ -238,35 +244,35 @@ export default function UserPreferencesProvider({
         ) : (
           <DashboardLoadingSkeleton />
         )}
-        {(preferencesQuery.isError || syncError) && (
-          <PreferencesError
-            onRetry={() => {
-              if (preferencesQuery.isError) void preferencesQuery.refetch();
-              schedule.current(0);
-            }}
-          />
-        )}
+        <ErrorToast
+          id={`preferences:${userId}`}
+          message={
+            preferencesQuery.isError || syncError
+              ? errorMessage(
+                  preferencesQuery.error ?? syncError,
+                  "No se pudieron sincronizar tus preferencias. Se reintentará automáticamente.",
+                )
+              : undefined
+          }
+          onRetry={() => {
+            if (preferencesQuery.isError) void preferencesQuery.refetch();
+            schedule.current(0);
+          }}
+        />
+        <ErrorToast
+          id={`preferences-storage:${userId}`}
+          message={
+            storageError
+              ? errorMessage(
+                  storageError,
+                  "No se pudieron guardar los cambios en este navegador.",
+                )
+              : undefined
+          }
+          onRetry={persist}
+        />
       </AccountLanguageBridge>
     </PreferencesContext.Provider>
-  );
-}
-
-function PreferencesError({ onRetry }: { onRetry: () => void }) {
-  const { t } = useLanguage();
-  return (
-    <div
-      role="alert"
-      className="fixed bottom-4 right-4 z-50 max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-sm text-white shadow-lg"
-    >
-      <p>
-        {t(
-          "No se pudieron sincronizar tus preferencias. Se reintentará automáticamente.",
-        )}
-      </p>
-      <button type="button" className="mt-2 underline" onClick={onRetry}>
-        {t("Reintentar")}
-      </button>
-    </div>
   );
 }
 

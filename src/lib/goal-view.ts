@@ -1,4 +1,5 @@
 import type { Client } from "@libsql/client";
+import { validInputId } from "./input-validation";
 
 export type GoalView = {
   zoom: number;
@@ -15,11 +16,12 @@ export const defaultGoalView: GoalView = {
 };
 
 export function validGoalId(id: string): boolean {
-  return id.length <= 128 && id.trim().length > 0;
+  return validInputId(id);
 }
 
 export function parseGoalView(value: unknown): GoalView {
-  if (!value || typeof value !== "object") throw new Error("Invalid view");
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid view");
   const view = value as GoalView;
   if (
     !Number.isFinite(view.zoom) ||

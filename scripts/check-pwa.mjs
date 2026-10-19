@@ -27,7 +27,7 @@ try {
   );
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
     "href",
-    "/icons/apple-touch-icon.png",
+    "/icons/apple-touch-icon.png?v=2",
   );
   await expect(
     page.locator('meta[name="mobile-web-app-capable"]'),

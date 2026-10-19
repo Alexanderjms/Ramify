@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { goalViewQueryKey } from "@/components/query-provider";
 import { parseGoalView, type GoalView } from "@/lib/goal-view";
+import { responseError } from "@/lib/feedback";
 
 export default function useGoalView(id: string, initialView: GoalView) {
   const { data: session } = useSession();
@@ -70,7 +71,7 @@ export default function useGoalView(id: string, initialView: GoalView) {
           signal,
         },
       );
-      if (!response.ok) throw new Error("Could not load view");
+      if (!response.ok) throw responseError(response);
       const remoteView = parseGoalView(await response.json());
       const cached = queryClient.getQueryData<GoalView>(queryKey);
       const cachedSaved = queryClient.getQueryData<GoalView>(savedQueryKey);
@@ -125,7 +126,10 @@ export default function useGoalView(id: string, initialView: GoalView) {
   const persistedView =
     queryClient.getQueryData<GoalView>(savedQueryKey) ?? initialView;
   const ownerKey = JSON.stringify([userId, id]);
-  const [saveState, setSaveState] = useState({ ownerKey, error: false });
+  const [saveState, setSaveState] = useState<{
+    ownerKey: string;
+    error: unknown;
+  }>({ ownerKey, error: null });
   const saveError = saveState.ownerKey === ownerKey && saveState.error;
 
   useLayoutEffect(() => {
@@ -177,7 +181,7 @@ export default function useGoalView(id: string, initialView: GoalView) {
           keepalive: input.keepalive,
         },
       );
-      if (!response.ok) throw new Error("Could not save view");
+      if (!response.ok) throw responseError(response);
     },
   });
   const mutateSave = saveMutation.mutateAsync;
@@ -207,11 +211,10 @@ export default function useGoalView(id: string, initialView: GoalView) {
             saved.current = body;
             savedRevision.current = Math.max(savedRevision.current, revision);
             queryClient.setQueryData(savedQueryKey, snapshot);
-            setSaveState({ ownerKey, error: false });
+            setSaveState({ ownerKey, error: null });
           }
-        } catch {
-          if (userIdRef.current === userId)
-            setSaveState({ ownerKey, error: true });
+        } catch (error) {
+          if (userIdRef.current === userId) setSaveState({ ownerKey, error });
         }
       });
     },
@@ -288,7 +291,7 @@ export default function useGoalView(id: string, initialView: GoalView) {
     updateScroll,
     saveError,
     retrySave: () => saveView(),
-    loadError: viewQuery.isError,
+    loadError: viewQuery.error,
     retryLoad: viewQuery.refetch,
     pauseSaving,
     resumeSaving,

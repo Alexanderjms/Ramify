@@ -18,13 +18,22 @@ import BranchTextField, { type BranchTextFieldName } from "./branch-text-field";
 import BranchResourceField from "./branch-resource-field";
 import BranchSubtaskField from "./branch-subtask-field";
 import { animateField } from "./branch-field-animations";
+import ValidatedForm from "@/components/validated-form";
+import { FormError } from "@/components/app-feedback";
+import { errorMessage } from "@/lib/feedback";
 
 export default function BranchFields({
   activity,
   onUpdate,
+  syncStatus,
+  syncPending,
+  onRetrySync,
 }: {
   activity: GoalActivity;
   onUpdate: (id: string, changes: GoalActivityChanges) => boolean;
+  syncStatus?: number;
+  syncPending?: boolean;
+  onRetrySync?: () => void;
 }) {
   const { t } = useLanguage();
   const [addingResource, setAddingResource] = useState(false);
@@ -124,11 +133,20 @@ export default function BranchFields({
   const fieldId = useId();
 
   function update(changes: GoalActivityChanges, id = activity.id) {
-    const saved = onUpdate(id, changes);
-    setError(
-      saved ? "" : "No se pudieron guardar los cambios. Inténtalo de nuevo.",
-    );
-    return saved;
+    try {
+      const saved = onUpdate(id, changes);
+      if (!saved) throw new Error("Update failed");
+      setError("");
+      return true;
+    } catch (error) {
+      setError(
+        errorMessage(
+          error,
+          "No se pudieron guardar los cambios. Inténtalo de nuevo.",
+        ),
+      );
+      return false;
+    }
   }
 
   function edit(field: BranchTextFieldName) {
@@ -188,7 +206,7 @@ export default function BranchFields({
         </button>
       </div>
       {editingName && (
-        <form
+        <ValidatedForm
           className="branch-name-form"
           onSubmit={(event) => {
             event.preventDefault();
@@ -196,11 +214,6 @@ export default function BranchFields({
               "name",
             ) as HTMLInputElement;
             const name = input.value.trim();
-            if (!name) {
-              input.setCustomValidity(t("Escribe el nombre de la meta."));
-              input.reportValidity();
-              return;
-            }
             if (name && name.length <= 100 && update({ name }))
               setEditingName(false);
           }}
@@ -210,7 +223,7 @@ export default function BranchFields({
             aria-label={t("Nombre de la meta")}
             defaultValue={activity.name}
             required
-            onInput={(event) => event.currentTarget.setCustomValidity("")}
+            pattern={".*\\S.*"}
             maxLength={100}
             autoFocus
             onFocus={(event) => event.currentTarget.select()}
@@ -231,7 +244,7 @@ export default function BranchFields({
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
           </button>
-        </form>
+        </ValidatedForm>
       )}
       <BranchTextField
         field="description"
@@ -243,9 +256,20 @@ export default function BranchFields({
         onKeyDown={saveOnEnter}
         onUpdate={updateTextField}
       />
-      {error && (
-        <p role="alert" className="branch-field-error">
-          {t(error)}
+      <FormError>{error && t(error)}</FormError>
+      {!error && syncStatus !== undefined && (
+        <FormError onRetry={onRetrySync}>
+          {t(
+            errorMessage(
+              { status: syncStatus },
+              "Cambios pendientes en este navegador. No se pudieron guardar en Turso.",
+            ),
+          )}
+        </FormError>
+      )}
+      {syncStatus === undefined && syncPending && (
+        <p role="status" className="text-xs leading-5 text-zinc-400">
+          {t("Guardado en este navegador; pendiente de sincronización.")}
         </p>
       )}
       <BranchProperties activity={activity} onUpdate={update} />

@@ -1,5 +1,7 @@
 import { useId } from "react";
 import { useLanguage } from "@/components/language-provider";
+import "@/components/login/github-button.css";
+import ValidatedForm from "@/components/validated-form";
 
 export default function EmptyGoalDiagram({
   onCreate,
@@ -26,18 +28,13 @@ export default function EmptyGoalDiagram({
             "Divide tu objetivo en metas más pequeñas. Añade la primera para empezar tu diagrama.",
           )}
         </p>
-        <form
+        <ValidatedForm
           className="mt-7 text-left"
           onSubmit={(event) => {
             event.preventDefault();
             const input = event.currentTarget.elements.namedItem(
               "name",
             ) as HTMLInputElement;
-            if (!input.value.trim()) {
-              input.setCustomValidity(t("Escribe el nombre de la meta."));
-              input.reportValidity();
-              return;
-            }
             onCreate("", input.value);
           }}
         >
@@ -48,19 +45,26 @@ export default function EmptyGoalDiagram({
             id={id}
             name="name"
             required
+            pattern={".*\\S.*"}
             maxLength={100}
             placeholder={t("Ej. Practicar 15 minutos al día")}
-            onInput={(event) => event.currentTarget.setCustomValidity("")}
             className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-zinc-400"
           />
           <button
             type="submit"
-            className="mt-3 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-white px-4 py-3 text-sm font-medium text-black hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            className="github-login-button relative mt-3 flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md border border-white bg-white px-4 py-3 text-sm font-medium text-black focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             <i aria-hidden="true" className="bi bi-plus-lg" />
             {t("Añadir primera meta")}
+            <span
+              aria-hidden="true"
+              className="github-login-ink absolute inset-0 flex items-center justify-center gap-2 bg-black text-white"
+            >
+              <i className="bi bi-plus-lg" />
+              {t("Añadir primera meta")}
+            </span>
           </button>
-        </form>
+        </ValidatedForm>
       </div>
     </section>
   );

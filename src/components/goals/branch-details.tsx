@@ -15,11 +15,19 @@ export default function BranchDetails({
   activity,
   source,
   onUpdate,
+  onClose,
+  syncStatus,
+  syncPending,
+  onRetrySync,
 }: {
   dialogRef: RefObject<HTMLDialogElement | null>;
   activity?: GoalActivity;
   source: HTMLElement | null;
   onUpdate: (id: string, changes: GoalActivityChanges) => boolean;
+  onClose?: () => void;
+  syncStatus?: number;
+  syncPending?: boolean;
+  onRetrySync?: () => void;
 }) {
   const connector = useRef<SVGPathElement>(null);
   const { t, language } = useLanguage();
@@ -33,7 +41,7 @@ export default function BranchDetails({
     const path = connector.current;
     const pin = pinnedTask.current;
     const canvas = source?.closest(".goal-canvas");
-    if (!panel || !path || !source || !canvas) return;
+    if (!panel || !path || !source || !canvas || !activity?.id) return;
     source.setAttribute("data-details-selected", "");
     source.style.setProperty("--branch-color", activity?.color ?? "#3B82F6");
     let frame = 0;
@@ -49,7 +57,9 @@ export default function BranchDetails({
       const origin = source.getBoundingClientRect();
       const view = canvas.getBoundingClientRect();
       const target = panel.getBoundingClientRect();
-      const heading = panel.querySelector("h2")!.getBoundingClientRect();
+      const headingElement = panel.querySelector("h2");
+      if (!headingElement) return;
+      const heading = headingElement.getBoundingClientRect();
       let x = origin.right + 16;
       let y = origin.top + origin.height / 2;
       const endX = target.left;
@@ -257,6 +267,7 @@ export default function BranchDetails({
       </TooltipButton>
       <dialog
         ref={dialogRef}
+        onClose={onClose}
         aria-labelledby="branch-details-title"
         className="branch-details app-scrollbar"
       >
@@ -277,6 +288,9 @@ export default function BranchDetails({
             key={activity.id}
             activity={activity}
             onUpdate={onUpdate}
+            syncStatus={syncStatus}
+            syncPending={syncPending}
+            onRetrySync={onRetrySync}
           />
         )}
       </dialog>

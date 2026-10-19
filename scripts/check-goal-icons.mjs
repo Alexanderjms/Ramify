@@ -7,6 +7,8 @@ import ts from "typescript";
 import { createClient } from "@libsql/client";
 
 const require = createRequire(import.meta.url);
+const { createElement } = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
 const modules = new Map();
 function load(name) {
   if (modules.has(name)) return modules.get(name);
@@ -36,6 +38,12 @@ const { goalIcons, isGoalIcon } = load("goal-icons");
 const { parseGoalFields, saveGoal, databaseId, listGoals, deleteGoalRecord } =
   load("goal-database");
 const { saveActivities } = load("activity-database");
+const { validActivities, validResourceUrl, validGoalFileUrl } =
+  load("goal-activities");
+const { validText, validInputId, validColor } = load("input-validation");
+const { saveUserPreferences } = load("preference-database");
+const { saveGoalView, parseGoalView } = load("goal-view");
+const { beginFile } = load("file-database");
 const { parseGoals } = load("goal-storage");
 const fields = { name: "Dummy", description: "", color: "#FFFFFF" };
 assert.equal(
@@ -175,6 +183,131 @@ try {
   assert.equal((await readGoal()).activities.length, 0);
   await deleteGoalRecord(client, "alice", "crud");
   assert.equal(await readGoal(), undefined);
+
+  // Injection-looking text must remain literal data, not be stripped or executed.
+  const payload = `x'); DROP TABLE goals; --`;
+  const xss = `<img src=x onerror="globalThis.__ramifyXss=1">`;
+  const attackFields = {
+    name: payload,
+    description: xss,
+    icon: "book",
+    color: "#FFFFFF",
+  };
+  const maliciousGoalId = `goal' OR 1=1 --`;
+  await saveGoal(client, "alice", maliciousGoalId, attackFields);
+  const tree = [
+    {
+      id: payload,
+      name: xss,
+      color: "#FFFFFF",
+      status: "pending",
+      description: payload,
+      notes: `${xss}\n${payload}`,
+      subtasks: [{ id: payload, name: xss, status: "pending" }],
+      resources: [
+        { id: payload, name: xss, url: "https://example.test/?q=%3Cscript%3E" },
+      ],
+    },
+  ];
+  await saveActivities(client, "alice", maliciousGoalId, tree, 0, attackFields);
+  const saved = (await listGoals(client, "alice")).find(
+    (goal) => goal.id === maliciousGoalId,
+  );
+  assert.equal(saved.name, payload);
+  assert.equal(saved.description, xss);
+  assert.equal(saved.activities[0].name, xss);
+  assert.equal(saved.activities[0].notes, `${xss}\n${payload}`);
+  assert.equal(saved.activities[0].subtasks[0].name, xss);
+  assert.equal(saved.activities[0].resources[0].name, xss);
+  const renderedText = renderToStaticMarkup(createElement("p", null, xss));
+  assert.ok(renderedText.includes("&lt;img"));
+  assert.ok(
+    !renderedText.includes("<img"),
+    "Plain text must not become executable HTML",
+  );
+  assert.equal((await listGoals(client, `alice' OR 1=1 --`)).length, 0);
+  await saveGoalView(client, "alice", maliciousGoalId, {
+    zoom: 1,
+    scrollLeft: 0,
+    scrollTop: 0,
+    collapsed: [payload],
+  });
+  const fileId = "ramify-file:11111111-1111-4111-8111-111111111111";
+  await beginFile(client, "alice", fileId, {
+    name: xss,
+    type: "text/html",
+    size: 0,
+  });
+  assert.equal(
+    (
+      await client.execute({
+        sql: "SELECT file_name FROM goal_files WHERE id = ?",
+        args: [fileId],
+      })
+    ).rows[0].file_name,
+    xss,
+  );
+  await assert.rejects(() =>
+    saveUserPreferences(client, "alice", { [payload]: "en" }),
+  );
+  await assert.rejects(() =>
+    saveUserPreferences(client, "alice", { language: payload }),
+  );
+  assert.throws(() =>
+    parseGoalView({
+      zoom: payload,
+      scrollLeft: 0,
+      scrollTop: 0,
+      collapsed: [],
+    }),
+  );
+  for (const changes of [
+    { color: xss },
+    { icon: xss },
+    { name: "a\u0000b" },
+    { description: "\ud800" },
+  ])
+    assert.throws(() => parseGoalFields({ ...attackFields, ...changes }));
+  for (const value of [
+    "javascript:alert(1)",
+    "JaVaScRiPt:alert(1)",
+    "java\tscript:alert(1)",
+    "&#106;avascript:alert(1)",
+    "data:text/html,<svg onload=alert(1)>",
+    "vbscript:msgbox(1)",
+    "//example.test",
+    "https://example.test/\r\nX-Test:1",
+  ])
+    assert.equal(validResourceUrl(value), false, value);
+  assert.equal(validResourceUrl("https://example.test/?q=%3Cscript%3E"), true);
+  assert.equal(
+    validGoalFileUrl("data:image/svg+xml,<svg onload=alert(1)>"),
+    false,
+  );
+  assert.equal(
+    validGoalFileUrl("data:application/octet-stream;base64,PHN2Zz4="),
+    true,
+  );
+  for (const value of ["a\u0000b", "a\u007fb", "\ud800", "x".repeat(129)])
+    assert.equal(validInputId(value), false);
+  assert.equal(validText("O'Connor <3", 100), true);
+  assert.equal(validColor("#ffffff\n"), false);
+  assert.equal(validText("Notes\nwith\ttabs", 100, true), true);
+  assert.equal(
+    validActivities([
+      { ...tree[0], resources: [{ id: "link", url: "javascript:alert(1)" }] },
+    ]),
+    false,
+  );
+  assert.equal(
+    (await client.execute("PRAGMA foreign_key_check")).rows.length,
+    0,
+  );
+  await deleteGoalRecord(client, "alice", maliciousGoalId);
+  assert.ok(
+    (await listGoals(client, "alice")).some((goal) => goal.id === "dummy"),
+    "SQL-like identifiers must not delete other goals",
+  );
 } finally {
   client.close();
 }
@@ -187,5 +320,5 @@ try {
   fresh.close();
 }
 console.log(
-  `OK: ${goalIcons.length} icons accepted; migration preserves data; goal/branch/subtask/resource CRUD persists.`,
+  `OK: ${goalIcons.length} icons accepted; CRUD persists; SQL payloads stay bound data; unsafe URLs, controls and invalid structured inputs are rejected.`,
 );

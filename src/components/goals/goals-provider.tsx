@@ -18,12 +18,15 @@ import {
   isStoredGoalFile,
   removeActivity,
   validActivities,
+  assertActivityLimits,
   type GoalActivity,
 } from "@/lib/goal-activities";
 import { migrateGoalFiles, removeGoalFile } from "@/lib/goal-files";
 import { goalsStorageKey, parseGoals } from "@/lib/goal-storage";
 import NewGoalModal from "./new-goal-modal";
 import { useLanguage } from "@/components/language-provider";
+import { ErrorToast, FormError, SyncToast } from "@/components/app-feedback";
+import { InputError, errorMessage, responseError } from "@/lib/feedback";
 
 type ActivityUpdate =
   GoalActivity[] | ((current: GoalActivity[]) => GoalActivity[]);
@@ -38,6 +41,9 @@ const GoalsContext = createContext<{
   updateGoal: (id: string, changes: GoalFields) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   deleteBranch: (goalId: string, activityId: string) => string[];
+  syncErrors: Record<string, number>;
+  retrySync: () => void;
+  setFeedbackGoalId: (id: string | null) => void;
 } | null>(null);
 
 function subscribeGoals(key: string, callback: () => void) {
@@ -84,7 +90,7 @@ async function persistGoal(userId: string, id: string, changes?: GoalFields) {
     },
     body: changes ? JSON.stringify(changes) : undefined,
   });
-  if (!response.ok) throw new Error("Could not save goal");
+  if (!response.ok) throw responseError(response);
 }
 
 function cleanupFiles(
@@ -180,6 +186,10 @@ export default function GoalsProvider({
   const [loaded, setLoaded] = useState(false);
   const [syncErrors, setSyncErrors] = useState<Record<string, number>>({});
   const [syncAttempt, setSyncAttempt] = useState(0);
+  const [feedbackGoalId, setFeedbackGoalId] = useState<string | null>(null);
+  const conflictDialog = useRef<HTMLDialogElement>(null);
+  const [conflictError, setConflictError] = useState("");
+  const [resolvingConflict, setResolvingConflict] = useState(false);
   const inFlight = useRef(new Map<string, Promise<void>>());
   const deleting = useRef(new Set<string>());
   const initialized = useRef(false);
@@ -203,7 +213,7 @@ export default function GoalsProvider({
         cache: "no-store",
         signal,
       });
-      if (!response.ok) throw new Error("Could not load goals");
+      if (!response.ok) throw responseError(response);
       return {
         goals: (await response.json()) as Goal[],
         revision: requestRevision,
@@ -276,7 +286,16 @@ export default function GoalsProvider({
             "Content-Type": "application/json",
             "X-Ramify-User-Id": userId,
           },
-          body: JSON.stringify({ activities, version, goal }),
+          body: JSON.stringify({
+            activities,
+            version,
+            goal: {
+              name: goal.name,
+              description: goal.description,
+              icon: goal.icon,
+              color: goal.color,
+            },
+          }),
         },
       );
       if (!response.ok) {
@@ -381,7 +400,9 @@ export default function GoalsProvider({
           else
             setSyncErrors((errors) => ({
               ...errors,
-              [id]: (error as { status?: number }).status ?? 500,
+              [id]:
+                (error as { status?: number }).status ??
+                (error instanceof TypeError ? 0 : 500),
             }));
         } finally {
           inFlight.current.delete(id);
@@ -503,12 +524,49 @@ export default function GoalsProvider({
     };
   }, [canRefreshGoals, queryClient, queryKey, refetchGoals]);
 
+  async function retrySync(overwrite = false) {
+    const conflicts = Object.entries(syncErrors).filter(
+      ([, status]) => status === 409,
+    );
+    if (conflicts.length && !overwrite) {
+      setConflictError("");
+      conflictDialog.current?.showModal();
+      return;
+    }
+    if (conflicts.length) {
+      const { data, error } = await refetchGoals();
+      if (error || !data) throw error ?? new Error("Could not load version");
+      if (!active.current) return;
+      const before = revision.current;
+      storeGoals(
+        parseGoals(getSnapshot()).map((goal) =>
+          conflicts.some(([id]) => id === goal.id)
+            ? {
+                ...goal,
+                activitiesVersion:
+                  data.goals.find((item) => item.id === goal.id)
+                    ?.activitiesVersion ?? goal.activitiesVersion,
+              }
+            : goal,
+        ),
+      );
+      updateRemoteCache(before, revision.current, (remote) => remote);
+    }
+    setSyncErrors({});
+    setSyncAttempt((attempt) => attempt + 1);
+  }
+
   return (
     <GoalsContext
       value={{
         userId,
         goals,
         loading: !loaded,
+        syncErrors,
+        retrySync: () => {
+          void retrySync();
+        },
+        setFeedbackGoalId,
         openCreateGoal: () => {
           creationId.current = null;
           dialog.current?.showModal();
@@ -654,7 +712,29 @@ export default function GoalsProvider({
             typeof activities === "function"
               ? activities(goal.activities ?? [])
               : activities;
-          if (!validActivities(next)) throw new Error("Invalid activities");
+          assertActivityLimits(next);
+          if (!validActivities(next))
+            throw new InputError(
+              "Hay datos no válidos. Revisa los campos antes de reintentar.",
+            );
+          if (
+            new TextEncoder().encode(
+              JSON.stringify({
+                activities: next,
+                version: goal.activitiesVersion ?? 0,
+                goal: {
+                  name: goal.name,
+                  description: goal.description,
+                  color: goal.color,
+                  icon: goal.icon,
+                },
+              }),
+            ).byteLength >
+            4 * 1024 * 1024
+          )
+            throw new InputError(
+              "El diagrama supera los 4 MB. Reduce las notas o los recursos antes de reintentar.",
+            );
           const before = revision.current;
           storeGoals(
             current.map((goal) =>
@@ -678,82 +758,98 @@ export default function GoalsProvider({
         },
       }}
     >
-      {goalsLoadError && (
-        <p role="alert" className="bg-black px-5 py-2 text-xs text-red-300">
-          {t("No se pudieron cargar las metas de Turso.")}{" "}
+      <ErrorToast
+        id={`goals-load:${userId}`}
+        message={
+          goalsLoadError
+            ? errorMessage(
+                goalsQuery.error,
+                "No se pudieron cargar las metas de Turso.",
+              )
+            : undefined
+        }
+        onRetry={() => void refetchGoals()}
+      />
+      {children}
+      {goals
+        .filter((goal) => goal.id !== feedbackGoalId)
+        .map((goal) => (
+          <SyncToast
+            key={goal.id}
+            id={`goal-update:${userId}:${goal.id}`}
+            pending={Boolean(goal.syncPending)}
+            failed={goal.id !== undefined && syncErrors[goal.id] !== undefined}
+          />
+        ))}
+      {Object.entries(syncErrors)
+        .filter(([id]) => id !== feedbackGoalId)
+        .map(([id, status]) => (
+          <ErrorToast
+            key={id}
+            id={`goal-sync:${userId}:${id}`}
+            message={errorMessage(
+              { status },
+              "Cambios pendientes en este navegador. No se pudieron guardar en Turso.",
+            )}
+            onRetry={() => void retrySync()}
+          />
+        ))}
+      <dialog
+        ref={conflictDialog}
+        aria-labelledby="sync-conflict-title"
+        className="new-goal-modal fixed m-auto w-[calc(100%-32px)] max-w-md rounded-lg border border-zinc-800 bg-black p-6 text-white"
+        onCancel={(event) => {
+          if (resolvingConflict) event.preventDefault();
+        }}
+      >
+        <h2 id="sync-conflict-title" className="text-lg font-semibold">
+          {t("Conflicto de sincronización")}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          {t(
+            "Otra sesión modificó el diagrama. ¿Reemplazar su versión con tus cambios locales?",
+          )}
+        </p>
+        <FormError>{conflictError && t(conflictError)}</FormError>
+        <form
+          className="mt-5 flex justify-end gap-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (resolvingConflict) return;
+            setResolvingConflict(true);
+            setConflictError("");
+            try {
+              await retrySync(true);
+              conflictDialog.current?.close();
+            } catch (error) {
+              setConflictError(
+                errorMessage(
+                  error,
+                  "No se pudieron cargar las metas de Turso.",
+                ),
+              );
+            } finally {
+              setResolvingConflict(false);
+            }
+          }}
+        >
           <button
             type="button"
-            className="underline"
-            onClick={() => void refetchGoals()}
+            className="cursor-pointer rounded border border-zinc-700 px-3 py-2 text-xs"
+            disabled={resolvingConflict}
+            onClick={() => conflictDialog.current?.close()}
           >
-            {t("Reintentar")}
+            {t("Cancelar")}
           </button>
-        </p>
-      )}
-      {children}
-      {goals.some((goal) => goal.syncPending) && (
-        <div
-          role={Object.keys(syncErrors).length ? "alert" : "status"}
-          className="fixed bottom-[calc(124px+env(safe-area-inset-bottom))] left-20 right-3 z-50 rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-xs leading-5 text-zinc-300 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[calc(100vw-32px)]"
-        >
-          {Object.keys(syncErrors).length
-            ? t(
-                "Cambios pendientes en este navegador. No se pudieron guardar en Turso.",
-              )
-            : t("Guardando cambios en Turso…")}
-          {!!Object.keys(syncErrors).length && (
-            <button
-              type="button"
-              className="ml-2 underline"
-              onClick={async () => {
-                const conflicts = Object.entries(syncErrors).filter(
-                  ([, status]) => status === 409,
-                );
-                if (conflicts.length) {
-                  if (
-                    !window.confirm(
-                      t(
-                        "Otra sesión modificó el diagrama. ¿Reemplazar su versión con tus cambios locales?",
-                      ),
-                    )
-                  )
-                    return;
-                  try {
-                    const { data, error } = await refetchGoals();
-                    if (error || !data)
-                      throw new Error("Could not load version");
-                    if (!active.current) return;
-                    const before = revision.current;
-                    storeGoals(
-                      parseGoals(getSnapshot()).map((goal) =>
-                        conflicts.some(([id]) => id === goal.id)
-                          ? {
-                              ...goal,
-                              activitiesVersion:
-                                data.goals.find((item) => item.id === goal.id)
-                                  ?.activitiesVersion ?? goal.activitiesVersion,
-                            }
-                          : goal,
-                      ),
-                    );
-                    updateRemoteCache(
-                      before,
-                      revision.current,
-                      (remote) => remote,
-                    );
-                  } catch {
-                    return;
-                  }
-                }
-                setSyncErrors({});
-                setSyncAttempt((attempt) => attempt + 1);
-              }}
-            >
-              {t("Reintentar")}
-            </button>
-          )}
-        </div>
-      )}
+          <button
+            type="submit"
+            className="cursor-pointer rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs"
+            disabled={resolvingConflict}
+          >
+            {t(resolvingConflict ? "Guardando…" : "Reemplazar versión")}
+          </button>
+        </form>
+      </dialog>
       <NewGoalModal
         dialogRef={dialog}
         onCreate={async (goal) => {

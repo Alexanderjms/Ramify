@@ -4,6 +4,8 @@ import "./globals.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import LanguageProvider from "@/components/language-provider";
 import { WarmTooltipGroup } from "@/components/WarmTooltip";
+import AppToaster from "@/components/app-feedback";
+import "goey-toast/styles.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,10 +21,10 @@ export const metadata: Metadata = {
   title: "Ramify",
   description: "Proyecto Ramify.",
   icons: {
-    icon: { url: "/Logo.svg?v=ramify", type: "image/svg+xml" },
-    shortcut: "/Logo.svg?v=ramify",
+    icon: { url: "/icons/favicon.png?v=3", type: "image/png", sizes: "48x48" },
+    shortcut: "/icons/favicon.png?v=3",
     apple: {
-      url: "/icons/apple-touch-icon.png",
+      url: "/icons/apple-touch-icon.png?v=2",
       sizes: "180x180",
       type: "image/png",
     },
@@ -52,6 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <LanguageProvider>
           <WarmTooltipGroup travel={200}>{children}</WarmTooltipGroup>
+          <AppToaster />
         </LanguageProvider>
       </body>
     </html>

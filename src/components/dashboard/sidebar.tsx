@@ -52,10 +52,10 @@ export default function Sidebar({
           className="flex min-w-0 items-center gap-2.5 overflow-hidden whitespace-nowrap text-white transition-opacity hover:opacity-80"
         >
           <Image
-            src="/Logo.svg"
+            src="/icons/ramify-logo.png"
             alt=""
-            width={30}
-            height={30}
+            width={32}
+            height={32}
             className="shrink-0"
             priority
           />

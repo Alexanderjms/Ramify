@@ -7,6 +7,7 @@ import {
 import { type GoalActivity } from "@/lib/goal-activities";
 import { ActivityStatus } from "./activity-status";
 import Tooltip, { TooltipButton } from "@/components/tooltip";
+import ValidatedForm from "@/components/validated-form";
 
 export type DiagramNode = {
   activity: GoalActivity;
@@ -86,7 +87,7 @@ export default function GoalDiagramNode({
       }}
     >
       {!activity.id ? (
-        <form
+        <ValidatedForm
           className="goal-inline-create"
           aria-label={t("Crear meta")}
           onKeyDown={(event) => {
@@ -111,6 +112,7 @@ export default function GoalDiagramNode({
             aria-label={t("Nombre de la nueva meta")}
             placeholder={t("Nombre de la meta")}
             required
+            pattern={".*\\S.*"}
             maxLength={100}
             autoFocus
             onFocus={(event) =>
@@ -118,13 +120,6 @@ export default function GoalDiagramNode({
                 block: "nearest",
                 inline: "nearest",
               })
-            }
-            onInput={(event) =>
-              event.currentTarget.setCustomValidity(
-                event.currentTarget.value.trim()
-                  ? ""
-                  : t("Escribe el nombre de la meta."),
-              )
             }
           />
           <TooltipButton
@@ -142,7 +137,7 @@ export default function GoalDiagramNode({
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
           </TooltipButton>
-        </form>
+        </ValidatedForm>
       ) : (
         <>
           <button

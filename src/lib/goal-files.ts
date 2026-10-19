@@ -1,5 +1,6 @@
 import { isStoredGoalFile, type GoalActivity } from "./goal-activities";
 import { goalsStorageKey } from "./goal-storage";
+import { responseError } from "./feedback";
 
 export const maxGoalFileSize = 20 * 1024 * 1024;
 const chunkSize = 256 * 1024;
@@ -62,7 +63,7 @@ async function uploadFile(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: file.name, type: file.type, size: file.size }),
   });
-  if (!start.ok) throw new Error("Could not upload file");
+  if (!start.ok) throw responseError(start);
   if (!(await start.json()).ready) {
     for (let offset = 0; offset < file.size; offset += chunkSize) {
       const response = await fetchFile(
@@ -75,10 +76,10 @@ async function uploadFile(
         },
         `?part=${offset / chunkSize}`,
       );
-      if (!response.ok) throw new Error("Could not upload file chunk");
+      if (!response.ok) throw responseError(response);
     }
     const complete = await fetchFile(userId, url, { method: "PATCH" });
-    if (!complete.ok) throw new Error("Could not finish upload");
+    if (!complete.ok) throw responseError(complete);
   }
   return url;
 }
@@ -105,7 +106,7 @@ export async function removeGoalFile(
   const response = await fetchFile(userId, url, {
     method: "DELETE",
   });
-  if (!response.ok) throw new Error("Could not remove file");
+  if (!response.ok) throw responseError(response);
   await fileRequest(userId, "readwrite", (store) => store.delete(url)).catch(
     () => {},
   );
@@ -123,6 +124,7 @@ export async function downloadGoalFile(
     file = await fileRequest<Blob | undefined>(userId, "readonly", (store) =>
       store.get(url),
     );
+  else throw responseError(response);
   if (!(file instanceof Blob)) throw new Error("Could not download file");
   const objectUrl = URL.createObjectURL(file);
   const link = document.createElement("a");
@@ -154,8 +156,7 @@ export async function migrateGoalFiles(
           resources.push(resource);
           continue;
         }
-        if (response.status !== 404)
-          throw new Error("Could not verify attachment");
+        if (response.status !== 404) throw responseError(response);
         const blob = await fileRequest<Blob | undefined>(
           userId,
           "readonly",

@@ -38,12 +38,6 @@ export function parseActivityTree(value: unknown): GoalActivity[] {
   if (!validActivities(value)) throw new ActivityError(400);
   function clean(items: GoalActivity[]): GoalActivity[] {
     return items.map((item) => {
-      if (
-        item.id.length > 128 ||
-        item.resources?.some((resource) => resource.id.length > 128) ||
-        item.subtasks?.some((task) => task.id.length > 128)
-      )
-        throw new ActivityError(400);
       return {
         id: item.id,
         name: item.name.trim(),

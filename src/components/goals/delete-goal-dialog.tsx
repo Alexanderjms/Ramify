@@ -3,6 +3,9 @@
 import { useId, useRef, useState, type RefObject } from "react";
 import { useLanguage } from "@/components/language-provider";
 import "./new-goal-modal.css";
+import { FormError } from "@/components/app-feedback";
+import { errorMessage } from "@/lib/feedback";
+import { gooeyToast } from "goey-toast";
 
 export default function DeleteGoalDialog({
   dialogRef,
@@ -18,7 +21,7 @@ export default function DeleteGoalDialog({
   const { t } = useLanguage();
   const titleId = useId();
   const descriptionId = useId();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
 
@@ -27,7 +30,7 @@ export default function DeleteGoalDialog({
       ref={dialogRef}
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      onClose={() => setError(false)}
+      onClose={() => setError("")}
       onCancel={(event) => {
         if (submitting.current) event.preventDefault();
       }}
@@ -46,15 +49,7 @@ export default function DeleteGoalDialog({
             : "Se eliminarán esta meta y todas sus ramas, subtareas y recursos. Esta acción no se puede deshacer.",
         )}
       </p>
-      {error && (
-        <p role="alert" className="mt-3 text-xs leading-5 text-red-400">
-          {t(
-            branch
-              ? "No se pudo eliminar la rama. Inténtalo de nuevo."
-              : "No se pudo eliminar la meta. Inténtalo de nuevo.",
-          )}
-        </p>
-      )}
+      <FormError>{error && t(error)}</FormError>
       <form
         aria-busy={pending}
         className="mt-6 flex flex-wrap justify-end gap-2 border-t border-zinc-800 pt-5 [&>button]:min-h-11 sm:[&>button]:min-h-0"
@@ -63,12 +58,29 @@ export default function DeleteGoalDialog({
           if (submitting.current) return;
           submitting.current = true;
           setPending(true);
-          setError(false);
+          setError("");
           try {
             await onDelete();
             dialogRef.current?.close();
-          } catch {
-            setError(true);
+            gooeyToast.success(
+              t(branch ? "Rama eliminada" : "Meta eliminada"),
+              {
+                description: branch
+                  ? t(
+                      "Guardado en este navegador; pendiente de sincronización.",
+                    )
+                  : undefined,
+              },
+            );
+          } catch (error) {
+            setError(
+              errorMessage(
+                error,
+                branch
+                  ? "No se pudo eliminar la rama. Inténtalo de nuevo."
+                  : "No se pudo eliminar la meta. Inténtalo de nuevo.",
+              ),
+            );
           } finally {
             submitting.current = false;
             setPending(false);

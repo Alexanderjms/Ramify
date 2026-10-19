@@ -28,6 +28,68 @@ dialog::backdrop,
   cursor: default;
 }
 
+.app-form-error {
+  display: flex;
+  gap: 8px;
+  margin-block: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgb(248 113 113 / 35%);
+  border-radius: 6px;
+  background: rgb(239 68 68 / 6%);
+  color: #fca5a5;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+input[aria-invalid="true"],
+textarea[aria-invalid="true"],
+.branch-fields input[aria-invalid="true"],
+.branch-fields textarea[aria-invalid="true"] {
+  border-color: #f87171;
+  outline-color: #f87171;
+}
+
+.branch-name-form:has(.app-form-error),
+.branch-compact-form:has(.app-form-error) {
+  flex-wrap: wrap;
+}
+
+.branch-name-form > .app-form-error,
+.branch-compact-form > .app-form-error {
+  flex-basis: 100%;
+  flex-wrap: nowrap;
+}
+
+/* Animate the blob, not the text's width or clipping rectangle. */
+[data-sonner-toast] .gooey-wrapper {
+  font-family: var(--font-geist-sans), sans-serif;
+  width: max-content !important;
+  max-width: calc(100vw - 48px);
+}
+
+[data-sonner-toast] .gooey-content {
+  width: max-content !important;
+  max-width: calc(100vw - 48px);
+  max-height: none !important;
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
+[data-sonner-toast] .gooey-wrapper:has(.gooey-contentExpanded),
+[data-sonner-toast] .gooey-contentExpanded {
+  width: min(380px, calc(100vw - 48px)) !important;
+  min-width: 0;
+}
+
+[data-sonner-toast] .gooey-timestamp {
+  display: none;
+}
+
+[data-sonner-toast] .gooey-description {
+  overflow-wrap: anywhere;
+}
+
 @media (pointer: coarse) {
   input:not(
     [type="checkbox"],

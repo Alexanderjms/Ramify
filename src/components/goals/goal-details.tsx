@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { GoalView } from "@/lib/goal-view";
 import useGoalView from "./use-goal-view";
 import NewGoalModal from "./new-goal-modal";
@@ -19,6 +19,9 @@ import BranchDetails from "./branch-details";
 import { GoalDiagramSkeleton } from "./goal-loading-skeleton";
 import { useLanguage } from "@/components/language-provider";
 import "./goal-details.css";
+import { ErrorToast } from "@/components/app-feedback";
+import { gooeyToast } from "goey-toast";
+import { errorMessage } from "@/lib/feedback";
 
 export default function GoalDetails({
   id,
@@ -34,6 +37,9 @@ export default function GoalDetails({
     updateGoal,
     deleteGoal,
     deleteBranch,
+    syncErrors,
+    retrySync,
+    setFeedbackGoalId,
   } = useGoals();
   const router = useRouter();
   const editDialog = useRef<HTMLDialogElement>(null);
@@ -66,7 +72,6 @@ export default function GoalDetails({
       ],
     }));
   }
-  const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<HTMLElement | null>(
     null,
@@ -75,16 +80,30 @@ export default function GoalDetails({
   const activities = goal?.activities ?? [];
   const all = flattenActivities(activities);
   const selected = all.find((item) => item.id === selectedId);
+  const detailsOpen = Boolean(selected);
+  useEffect(() => {
+    setFeedbackGoalId(detailsOpen ? id : null);
+    return () => setFeedbackGoalId(null);
+  }, [id, detailsOpen, setFeedbackGoalId]);
 
   function save(
     next: GoalActivity[] | ((current: GoalActivity[]) => GoalActivity[]),
+    inline = false,
   ) {
     try {
       updateActivities(id, next);
-      setError("");
       return true;
-    } catch {
-      setError("No se pudieron guardar los cambios en este navegador.");
+    } catch (error) {
+      if (inline) throw error;
+      gooeyToast.error(t("No se pudo completar la acción"), {
+        id: `diagram-edit:${id}`,
+        description: t(
+          errorMessage(
+            error,
+            "No se pudieron guardar los cambios en este navegador.",
+          ),
+        ),
+      });
       return false;
     }
   }
@@ -161,31 +180,24 @@ export default function GoalDetails({
 
   return (
     <div className="goal-detail">
-      {saveError && (
-        <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
-          {t("No se pudo guardar la vista en Turso.")}{" "}
-          <button type="button" onClick={retrySave} className="underline">
-            {t("Reintentar")}
-          </button>
-        </p>
-      )}
-      {loadError && (
-        <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
-          {t("No se pudo cargar la vista en Turso.")}{" "}
-          <button
-            type="button"
-            onClick={() => void retryLoad()}
-            className="underline"
-          >
-            {t("Reintentar")}
-          </button>
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="px-5 py-2 text-xs text-red-400 sm:px-8">
-          {t(error)}
-        </p>
-      )}
+      <ErrorToast
+        id={`view-save:${id}`}
+        message={
+          saveError
+            ? errorMessage(saveError, "No se pudo guardar la vista en Turso.")
+            : undefined
+        }
+        onRetry={retrySave}
+      />
+      <ErrorToast
+        id={`view-load:${id}`}
+        message={
+          loadError
+            ? errorMessage(loadError, "No se pudo cargar la vista en Turso.")
+            : undefined
+        }
+        onRetry={() => void retryLoad()}
+      />
       <GoalDiagram
         onDeleteBranch={(activityId) => {
           setDeletingBranchId(activityId);
@@ -229,14 +241,20 @@ export default function GoalDetails({
         dialogRef={detailsDialog}
         activity={selected}
         source={selectedSource}
+        onClose={() => setSelectedId(null)}
+        syncStatus={syncErrors[id]}
+        syncPending={goal.syncPending}
+        onRetrySync={retrySync}
         onUpdate={(activityId, changes) =>
-          save((current) =>
-            mapActivities(current, activityId, (item) => {
-              const patch =
-                typeof changes === "function" ? changes(item) : changes;
-              const next = { ...item, ...patch };
-              return patch.color ? colorActivity(next, patch.color) : next;
-            }),
+          save(
+            (current) =>
+              mapActivities(current, activityId, (item) => {
+                const patch =
+                  typeof changes === "function" ? changes(item) : changes;
+                const next = { ...item, ...patch };
+                return patch.color ? colorActivity(next, patch.color) : next;
+              }),
+            true,
           )
         }
       />

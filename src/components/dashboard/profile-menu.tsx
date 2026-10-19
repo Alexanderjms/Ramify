@@ -8,6 +8,7 @@ import Select from "@/components/select";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
 import { useSession } from "next-auth/react";
+import { ErrorToast } from "@/components/app-feedback";
 
 function LogoutButton() {
   const { pending } = useFormStatus();
@@ -103,11 +104,14 @@ export default function ProfileMenu() {
         <form action={logout}>
           <LogoutButton />
         </form>
-        {error && (
-          <p role="alert" className="px-2 pt-2 text-xs text-red-400">
-            {t("No se pudo guardar el idioma en este navegador.")}
-          </p>
-        )}
+        <ErrorToast
+          id="profile-language"
+          message={
+            error
+              ? "No se pudo guardar el idioma en este navegador."
+              : undefined
+          }
+        />
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import type { Goal } from "./goals";
 import { isGoalIcon } from "./goal-icons";
+import { validColor, validInputId, validText } from "./input-validation";
 import {
   exampleActivities,
   flattenActivities,
@@ -30,15 +31,11 @@ export function parseGoals(snapshot: string): Goal[] {
     !value.every(
       (goal) =>
         goal &&
-        typeof goal.id === "string" &&
-        goal.id.length > 0 &&
-        typeof goal.name === "string" &&
+        validInputId(goal.id) &&
+        validText(goal.name, 100) &&
         goal.name.trim().length > 0 &&
-        goal.name.length <= 100 &&
-        typeof goal.description === "string" &&
-        goal.description.length <= 1000 &&
-        typeof goal.color === "string" &&
-        /^#[a-f\d]{6}$/i.test(goal.color) &&
+        validText(goal.description, 1000, true) &&
+        validColor(goal.color) &&
         (goal.icon === undefined || isGoalIcon(goal.icon)) &&
         Number.isFinite(goal.progress) &&
         goal.progress >= 0 &&

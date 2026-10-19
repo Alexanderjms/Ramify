@@ -132,6 +132,13 @@ try {
       .toBe(true);
   }
   for (const screen of ["dashboard", "metas", "diagrama", "loading"]) {
+    await expect
+      .poll(
+        async () =>
+          (await page.request.get(`${base}/${prefix}/${screen}`)).status(),
+        { timeout: 15000 },
+      )
+      .toBe(200);
     await page.goto(`${base}/${prefix}/${screen}`);
     if (screen === "diagrama")
       await expect(

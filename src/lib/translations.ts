@@ -1,4 +1,59 @@
 export const english: Record<string, string> = {
+  "El texto contiene caracteres no válidos.":
+    "The text contains invalid characters.",
+  "Rama eliminada": "Branch deleted",
+  "Cambios guardados": "Changes saved",
+  "El servidor no pudo completar la acción. Tus datos se conservan; inténtalo de nuevo.":
+    "The server could not complete the action. Your data is preserved; please try again.",
+  "Tu sesión ha caducado. Vuelve a iniciar sesión; tus cambios locales se conservan.":
+    "Your session expired. Sign in again; your local changes are preserved.",
+  "La cuenta cambió o no tienes permiso. Recarga la página antes de reintentar.":
+    "The account changed or you do not have permission. Reload the page before retrying.",
+  "Hay datos no válidos. Revisa los campos antes de reintentar.":
+    "Some data is invalid. Check the fields before retrying.",
+  "Este elemento ya no está disponible. Actualiza la página.":
+    "This item is no longer available. Refresh the page.",
+  "Otra sesión modificó el diagrama. Revisa el conflicto antes de reemplazar sus cambios.":
+    "Another session changed the diagram. Review the conflict before replacing its changes.",
+  "Los datos superan el tamaño permitido. Reduce el contenido antes de reintentar.":
+    "The data exceeds the allowed size. Reduce the content before retrying.",
+  "Demasiados intentos. Espera un momento antes de reintentar.":
+    "Too many attempts. Wait a moment before retrying.",
+  "El almacenamiento del navegador está lleno. Libera espacio antes de reintentar.":
+    "Browser storage is full. Free up space before retrying.",
+  "El navegador bloqueó el almacenamiento. Habilítalo para guardar los cambios.":
+    "Your browser blocked storage. Enable it to save changes.",
+  "No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo.":
+    "Could not connect. Check your connection and try again.",
+  "No se pudo completar la acción": "Could not complete the action",
+  "Revisa el valor de este campo.": "Check this field's value.",
+  "Completa este campo.": "Complete this field.",
+  "Escribe un nombre que no contenga solo espacios.":
+    "Enter a name that is not just spaces.",
+  "Introduce un número entero entre 35 y 200.":
+    "Enter a whole number between 35 and 200.",
+  "Se alcanzó el límite de 32 niveles del diagrama.":
+    "The diagram has reached its limit of 32 levels.",
+  "Se alcanzó el límite de 2.000 ramas por meta.":
+    "This goal has reached its limit of 2,000 branches.",
+  "Se alcanzó el límite de 2.000 subtareas por rama.":
+    "This branch has reached its limit of 2,000 subtasks.",
+  "Se alcanzó el límite de 50 recursos por rama.":
+    "This branch has reached its limit of 50 resources.",
+  "El diagrama supera los 4 MB. Reduce las notas o los recursos antes de reintentar.":
+    "The diagram exceeds 4 MB. Reduce notes or resources before retrying.",
+  "Guardado en este navegador; pendiente de sincronización.":
+    "Saved in this browser; waiting to sync.",
+  "Conflicto de sincronización": "Sync conflict",
+  "Reemplazar versión": "Replace version",
+  "Guardando cambios…": "Saving changes…",
+  "Meta actualizada": "Goal updated",
+  "Los cambios se guardaron en tu cuenta.":
+    "Changes were saved to your account.",
+  "Meta creada": "Goal created",
+  "Meta eliminada": "Goal deleted",
+  "Rama eliminada en este navegador; sincronización pendiente.":
+    "Branch deleted in this browser; waiting to sync.",
   Meta: "Goal",
   "No se pudo cargar la vista en Turso.": "Could not load the view from Turso.",
   "Tu meta empieza aquí": "Your goal starts here",

@@ -1,5 +1,6 @@
 import type { Client } from "@libsql/client";
 import { isStoredGoalFile } from "./goal-activities";
+import { validText } from "./input-validation";
 
 export const fileChunkSize = 256 * 1024;
 export const maxFileSize = 20 * 1024 * 1024;
@@ -26,7 +27,12 @@ export async function beginFile(
   id: string,
   value: unknown,
 ) {
-  if (!isStoredGoalFile(id) || !value || typeof value !== "object")
+  if (
+    !isStoredGoalFile(id) ||
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  )
     throw new FileError(400);
   const { name, type, size } = value as {
     name: string;
@@ -34,14 +40,9 @@ export async function beginFile(
     size: number;
   };
   if (
-    typeof name !== "string" ||
+    !validText(name, 255) ||
     !name.trim() ||
-    name.length > 255 ||
-    !name.isWellFormed() ||
-    /[\x00-\x1f\x7f]/.test(name) ||
-    typeof type !== "string" ||
-    type.length > 255 ||
-    /[\x00-\x1f\x7f]/.test(type) ||
+    !validText(type, 255) ||
     !Number.isSafeInteger(size) ||
     size < 0 ||
     size > maxFileSize

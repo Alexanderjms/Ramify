@@ -17,7 +17,13 @@ export default function DashboardLoadingSkeleton() {
       <span className="sr-only">{t("Cargando Ramify…")}</span>
       <aside className="flex w-[68px] shrink-0 flex-col gap-6 border-r border-zinc-800 px-3 md:w-[252px] md:px-4">
         <div className="flex h-14 items-center gap-2.5 border-b border-zinc-800">
-          <Image src="/Logo.svg" alt="" width={30} height={30} priority />
+          <Image
+            src="/icons/ramify-logo.png"
+            alt=""
+            width={32}
+            height={32}
+            priority
+          />
           <Skeleton className="hidden h-6 w-20 md:block" />
         </div>
         <div className="space-y-3">

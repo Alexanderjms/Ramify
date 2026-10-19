@@ -8,6 +8,10 @@ import IconPicker from "./icon-picker";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
 import "./new-goal-modal.css";
+import ValidatedForm from "@/components/validated-form";
+import { FormError } from "@/components/app-feedback";
+import { errorMessage } from "@/lib/feedback";
+import { gooeyToast } from "goey-toast";
 
 export default function NewGoalModal({
   dialogRef,
@@ -89,7 +93,7 @@ export default function NewGoalModal({
             : "Añade el nombre y personaliza el icono de tu meta.",
         )}
       </p>
-      <form
+      <ValidatedForm
         aria-busy={pending}
         ref={form}
         onSubmit={async (event) => {
@@ -98,15 +102,13 @@ export default function NewGoalModal({
           const nameInput = event.currentTarget.elements.namedItem(
             "name",
           ) as HTMLInputElement;
-          if (!nameInput.value.trim()) {
-            nameInput.setCustomValidity(t("Escribe el nombre de la meta."));
-            nameInput.reportValidity();
-            return;
-          }
           const data = new FormData(event.currentTarget);
           submitting.current = true;
           setPending(true);
           setError("");
+          const notice = initialGoal
+            ? gooeyToast(t("Guardando cambios…"), { duration: 12000 })
+            : undefined;
           try {
             await onCreate({
               name: nameInput.value.trim(),
@@ -114,10 +116,25 @@ export default function NewGoalModal({
               icon,
               color,
             });
+            if (!dialogRef.current?.isConnected) {
+              if (notice !== undefined) gooeyToast.dismiss(notice);
+              return;
+            }
             dialogRef.current?.close();
-          } catch {
+            if (notice !== undefined)
+              gooeyToast.update(notice, {
+                type: "success",
+                title: t("Meta actualizada"),
+                description: t("Los cambios se guardaron en tu cuenta."),
+              });
+            else gooeyToast.success(t("Meta creada"));
+          } catch (error) {
+            if (notice !== undefined) gooeyToast.dismiss(notice);
             setError(
-              "No se pudo guardar la meta. Inténtalo de nuevo; el formulario se ha conservado.",
+              errorMessage(
+                error,
+                "No se pudo guardar la meta. Inténtalo de nuevo; el formulario se ha conservado.",
+              ),
             );
           } finally {
             submitting.current = false;
@@ -133,10 +150,10 @@ export default function NewGoalModal({
               name="name"
               defaultValue={initialGoal?.name ?? ""}
               required
+              pattern={".*\\S.*"}
               maxLength={100}
               autoFocus
               placeholder={t("Ej. Aprender inglés")}
-              onInput={(event) => event.currentTarget.setCustomValidity("")}
               className="min-h-10 rounded border border-zinc-800 bg-black px-3 text-[13px] outline-none placeholder:text-zinc-500 focus:border-zinc-500"
             />
           </label>
@@ -160,11 +177,7 @@ export default function NewGoalModal({
               onColorChange={setColor}
             />
           </div>
-          {error && (
-            <p role="alert" className="text-xs leading-5 text-red-400">
-              {t(error)}
-            </p>
-          )}
+          <FormError>{error && t(error)}</FormError>
           <div className="mt-1 flex justify-end gap-2 border-t border-zinc-800 pt-5">
             <button
               type="button"
@@ -192,7 +205,7 @@ export default function NewGoalModal({
             </button>
           </div>
         </fieldset>
-      </form>
+      </ValidatedForm>
     </dialog>
   );
 }

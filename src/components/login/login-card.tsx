@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { Session } from "next-auth";
 import Icon from "@/components/icon";
 import "./github-button.css";
+import { ErrorToast } from "@/components/app-feedback";
 
 export default function LoginCard({
   session,
@@ -24,7 +25,7 @@ export default function LoginCard({
   return (
     <div className="w-full max-w-[380px] rounded-2xl border border-white/15 bg-[#090b10]/50 px-5 py-8 text-center shadow-2xl backdrop-blur-xl sm:px-9 sm:py-10">
       <Image
-        src="/Logo.svg"
+        src="/icons/ramify-logo.png"
         alt={t("Logo de Ramify")}
         width={72}
         height={72}
@@ -57,15 +58,16 @@ export default function LoginCard({
           </span>
         </button>
       </form>
-      {error && (
-        <p role="alert" className="mt-4 text-sm leading-5 text-amber-200">
-          {t(
-            error === "configuration"
+      <ErrorToast
+        id="login-error"
+        message={
+          error
+            ? error === "configuration"
               ? "Configura las credenciales de GitHub, AUTH_SECRET y la conexión de Turso en .env para activar el acceso."
-              : "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub.",
-          )}
-        </p>
-      )}
+              : "No se pudo iniciar sesión. Inténtalo de nuevo con GitHub."
+            : undefined
+        }
+      />
     </div>
   );
 }

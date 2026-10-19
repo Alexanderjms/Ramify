@@ -90,6 +90,8 @@ let preferences = {
 };
 const errors = [];
 let failSave = false;
+let saveStatus = 500;
+let failSync = 0;
 try {
   await writeFile(
     `${route}/layout.tsx`,
@@ -132,14 +134,28 @@ export default async function Layout({ children }: { children: React.ReactNode }
     } else if (url.pathname === "/api/goals") json = [goal];
     else if (url.pathname.endsWith("/view"))
       json = { zoom: 1, scrollLeft: 0, scrollTop: 0, collapsed: [] };
-    else if (url.pathname.endsWith("/activities")) json = { version: 2 };
-    else if (
+    else if (url.pathname.endsWith("/activities")) {
+      if (failSync) {
+        await request.fulfill({
+          status: failSync,
+          json: { error: "Simulated sync failure" },
+        });
+        return;
+      }
+      const body = req.postDataJSON();
+      goal = {
+        ...goal,
+        activities: body.activities,
+        activitiesVersion: body.version + 1,
+      };
+      json = { version: body.version + 1 };
+    } else if (
       url.pathname === "/api/goals/responsive-goal" &&
       req.method() === "PUT"
     ) {
       if (failSave) {
         await request.fulfill({
-          status: 500,
+          status: saveStatus,
           json: { error: "Simulated write failure" },
         });
         return;
@@ -165,8 +181,17 @@ export default async function Layout({ children }: { children: React.ReactNode }
   });
   page.on("pageerror", (error) => errors.push(error.message));
   const prefix = route.split(/[\\/]/).at(-1);
-  const seededResponse = await context.request.get(`${base}/${prefix}/seeded`);
-  const seededHtml = await seededResponse.text();
+  let seededHtml;
+  await expect
+    .poll(
+      async () => {
+        const response = await context.request.get(`${base}/${prefix}/seeded`);
+        seededHtml = await response.text();
+        return response.status();
+      },
+      { timeout: 15000 },
+    )
+    .toBe(200);
   assert.ok(
     seededHtml.includes(">Goals<"),
     "Server-rendered preferences must use English immediately",
@@ -223,6 +248,68 @@ export default async function Layout({ children }: { children: React.ReactNode }
     exact: true,
   });
   await expect(picker).toBeVisible();
+  const allIcons = Object.keys(
+    JSON.parse(
+      await readFile(
+        new URL(
+          "../node_modules/bootstrap-icons/font/bootstrap-icons.json",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ),
+  ).sort();
+  const iconGrid = picker.getByRole("group", {
+    name: "Bootstrap icons",
+    exact: true,
+  });
+  const renderedIcons = iconGrid.locator("button[data-icon-index]");
+  await expect(picker.getByRole("status")).toContainText(
+    String(allIcons.length),
+  );
+  assert.ok(
+    (await renderedIcons.count()) < 130,
+    "Only visible icon rows should be mounted",
+  );
+  await iconGrid.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  const lastIcon = iconGrid.getByRole("button", {
+    name: allIcons.at(-1),
+    exact: true,
+  });
+  await expect(lastIcon).toBeVisible();
+  assert.ok((await renderedIcons.count()) < 130);
+  await lastIcon.focus();
+  await page.keyboard.press("Home");
+  const firstIcon = iconGrid.getByRole("button", {
+    name: allIcons[0],
+    exact: true,
+  });
+  await expect(firstIcon).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(lastIcon).toBeFocused();
+  const iconSearch = picker.getByRole("searchbox", {
+    name: "Search icons",
+    exact: true,
+  });
+  await iconSearch.fill("star");
+  await expect(
+    iconGrid.getByRole("button", { name: "star", exact: true }),
+  ).toBeVisible();
+  await expect(renderedIcons).toHaveCount(
+    allIcons.filter((name) => name.includes("star")).length,
+  );
+  await iconSearch.fill("");
+  await expect(firstIcon).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 740 });
+  await expect(iconGrid).toHaveCSS("--icon-columns", "6");
+  await iconGrid.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(lastIcon).toBeVisible();
+  assert.ok((await renderedIcons.count()) < 90);
+  await page.setViewportSize({ width: 1440, height: 900 });
   await picker
     .getByRole("button", { name: "Close icon picker", exact: true })
     .click();
@@ -236,19 +323,47 @@ export default async function Layout({ children }: { children: React.ReactNode }
     .getByRole("button", { name: "Options for Learn English", exact: true })
     .click();
   await page.getByRole("menuitem", { name: "Edit goal", exact: true }).click();
+  const nameInput = edit.getByRole("textbox", {
+    name: "Goal name",
+    exact: true,
+  });
+  await nameInput.fill("   ");
+  await edit.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(edit.getByRole("alert")).toHaveText(
+    "Enter a name that is not just spaces.",
+  );
+  await expect(nameInput).toHaveAttribute("aria-invalid", "true");
+  await expect(nameInput).toBeFocused();
+  await expect(edit.getByRole("alert")).toHaveCSS("border-radius", "6px");
   await edit
     .getByRole("textbox", { name: "Goal name", exact: true })
     .fill("Learn English daily");
   failSave = true;
   await edit.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(edit.getByRole("alert")).toBeVisible();
+  await expect(edit.getByRole("alert")).toContainText(
+    "The server could not complete the action.",
+  );
   await expect(
     edit.getByRole("textbox", { name: "Goal name", exact: true }),
   ).toHaveValue("Learn English daily");
+  saveStatus = 401;
+  await edit.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(edit.getByRole("alert")).toContainText("Your session expired.");
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .filter({ hasText: "Your session expired." }),
+  ).toHaveCount(0);
   failSave = false;
   await edit.getByRole("button", { name: "Save changes", exact: true }).click();
   await expect(edit).not.toBeVisible();
   await expect(row.getByRole("link")).toHaveText("Learn English daily");
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Goal updated", { exact: true }),
+  ).toBeVisible();
   await row
     .getByRole("button", {
       name: "Options for Learn English daily",
@@ -298,10 +413,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
   await page
     .getByRole("button", { name: "Add first goal", exact: true })
     .click();
-  assert.equal(
-    await input.evaluate((el) => el.validationMessage),
-    "Enter the goal name.",
-  );
+  await expect(input).toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .getByText("Enter a name that is not just spaces.", { exact: true }),
+  ).toBeVisible();
   await input.fill("Practice vocabulary");
   await page
     .getByRole("button", { name: "Add first goal", exact: true })
@@ -310,6 +427,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
     page.getByRole("button", { name: "Practice vocabulary", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".goal-diagram-empty")).toHaveCount(0);
+  const syncToast = page
+    .locator("[data-sonner-toast]")
+    .filter({ hasText: "Changes saved" });
+  await expect(syncToast).toBeVisible();
+  await expect(syncToast).toHaveCount(0, { timeout: 7000 });
   await page
     .getByRole("button", { name: "Practice vocabulary", exact: true })
     .click();
@@ -318,6 +440,83 @@ export default async function Layout({ children }: { children: React.ReactNode }
     exact: true,
   });
   await expect(details).toBeVisible();
+  await details
+    .getByRole("button", { name: "Add subtask", exact: true })
+    .click();
+  const subtaskForm = details.getByRole("form", {
+    name: "Add subtask",
+    exact: true,
+  });
+  await subtaskForm
+    .getByRole("button", { name: "Save subtask", exact: true })
+    .click();
+  await expect(subtaskForm.getByRole("alert")).toHaveText(
+    "Complete this field.",
+  );
+  await subtaskForm.getByRole("textbox").fill("   ");
+  await subtaskForm
+    .getByRole("button", { name: "Save subtask", exact: true })
+    .click();
+  await expect(subtaskForm.getByRole("alert")).toHaveText(
+    "Enter a name that is not just spaces.",
+  );
+  failSync = 409;
+  await subtaskForm.getByRole("textbox").fill("Review words");
+  await subtaskForm
+    .getByRole("button", { name: "Save subtask", exact: true })
+    .click();
+  await expect(details.getByRole("alert")).toContainText(
+    "Another session changed the diagram.",
+  );
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .filter({ hasText: "Another session changed the diagram." }),
+  ).toHaveCount(0);
+  await details.getByRole("button", { name: "Retry", exact: true }).click();
+  const conflict = page.getByRole("dialog", {
+    name: "Sync conflict",
+    exact: true,
+  });
+  await expect(conflict).toBeVisible();
+  await conflict.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(details.getByRole("alert")).toContainText(
+    "Another session changed the diagram.",
+  );
+  failSync = 0;
+  await details.getByRole("button", { name: "Retry", exact: true }).click();
+  await conflict
+    .getByRole("button", { name: "Replace version", exact: true })
+    .click();
+  await expect(details.getByRole("alert")).toHaveCount(0);
+  await details
+    .getByRole("button", { name: "+ Add resource", exact: true })
+    .click();
+  const resourceForm = details.getByRole("form", {
+    name: "Add resource",
+    exact: true,
+  });
+  await resourceForm.getByRole("textbox").fill("ftp://example.com/file");
+  await resourceForm
+    .getByRole("button", { name: "Save resource", exact: true })
+    .click();
+  await expect(resourceForm.getByRole("alert")).toHaveText(
+    "Use a valid http:// or https:// URL.",
+  );
+  await resourceForm
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await details.locator('input[type="file"]').setInputFiles({
+    name: "too-large.bin",
+    mimeType: "application/octet-stream",
+    buffer: Buffer.alloc(20 * 1024 * 1024 + 1),
+  });
+  await expect(details.getByRole("alert")).toContainText("20 MB");
+  if (process.env.UI_SCREENSHOTS)
+    await page.screenshot({
+      path: `${process.env.UI_SCREENSHOTS}/validation-panel.png`,
+      fullPage: true,
+    });
   await details
     .getByRole("button", { name: "Close goal details", exact: true })
     .click();

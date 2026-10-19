@@ -1,6 +1,10 @@
+import { InputError } from "./feedback";
+import { validColor, validInputId, validText } from "./input-validation";
+
 export function isStoredGoalFile(value: unknown): boolean {
   return (
     typeof value === "string" &&
+    value.length === 48 &&
     /^ramify-file:[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(value)
   );
 }
@@ -54,12 +58,28 @@ export function colorActivity(
 }
 
 export function validResourceUrl(value: unknown): value is string {
-  if (typeof value !== "string" || value.length > 2000) return false;
+  if (
+    !validText(value, 2000) ||
+    !/^https?:\/\//i.test(value) ||
+    /\\/.test(value)
+  )
+    return false;
   try {
     return ["https:", "http:"].includes(new URL(value).protocol);
   } catch {
     return false;
   }
+}
+
+export function validGoalFileUrl(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (isStoredGoalFile(value) ||
+      (value.length <= 1398145 &&
+        /^data:application\/octet-stream;base64,[A-Za-z0-9+/]*={0,2}$/.test(
+          value,
+        )))
+  );
 }
 
 const blue = "#3B82F6";
@@ -156,24 +176,19 @@ export function validActivities(
     value.every((item) => {
       if (
         !item ||
-        typeof item.id !== "string" ||
-        !item.id ||
+        !validInputId(item.id) ||
         ids.has(item.id) ||
         ids.size >= 2000 ||
-        typeof item.name !== "string" ||
+        !validText(item.name, 100) ||
         !item.name.trim() ||
-        item.name.length > 100 ||
-        typeof item.color !== "string" ||
-        !/^#[a-f\d]{6}$/i.test(item.color) ||
+        !validColor(item.color) ||
         !["pending", "progress", "completed"].includes(item.status)
       )
         return false;
       if (
         (item.description !== undefined &&
-          (typeof item.description !== "string" ||
-            item.description.length > 4000)) ||
-        (item.notes !== undefined &&
-          (typeof item.notes !== "string" || item.notes.length > 10000)) ||
+          !validText(item.description, 4000, true)) ||
+        (item.notes !== undefined && !validText(item.notes, 10000, true)) ||
         (item.priority !== undefined &&
           !["low", "medium", "high"].includes(item.priority))
       )
@@ -199,24 +214,14 @@ export function validActivities(
           !item.resources.every(
             (resource: GoalResource) =>
               resource &&
-              typeof resource.id === "string" &&
-              resource.id &&
+              validInputId(resource.id) &&
               (resource.name === undefined ||
-                (typeof resource.name === "string" &&
-                  resource.name.trim() &&
-                  resource.name.length <= 200)) &&
+                (validText(resource.name, 200) && resource.name.trim())) &&
               (resource.fileName === undefined
                 ? validResourceUrl(resource.url)
-                : typeof resource.fileName === "string" &&
+                : validText(resource.fileName, 255) &&
                   resource.fileName.trim() &&
-                  resource.fileName.length <= 255 &&
-                  !/[\x00-\x1f]/.test(resource.fileName) &&
-                  typeof resource.url === "string" &&
-                  (isStoredGoalFile(resource.url) ||
-                    (resource.url.length <= 1398145 &&
-                      /^data:application\/octet-stream;base64,[A-Za-z0-9+/]*={0,2}$/.test(
-                        resource.url,
-                      )))),
+                  validGoalFileUrl(resource.url)),
           ) ||
           new Set(item.resources.map((resource: GoalResource) => resource.id))
             .size !== item.resources.length)
@@ -230,11 +235,9 @@ export function validActivities(
           !item.subtasks.every(
             (task: NonNullable<GoalActivity["subtasks"]>[number]) =>
               task &&
-              typeof task.id === "string" &&
-              task.id &&
-              typeof task.name === "string" &&
+              validInputId(task.id) &&
+              validText(task.name, 100) &&
               task.name.trim() &&
-              task.name.length <= 100 &&
               ["pending", "completed"].includes(task.status),
           ) ||
           new Set(item.subtasks.map((task: { id: string }) => task.id)).size !==
@@ -247,6 +250,26 @@ export function validActivities(
       );
     })
   );
+}
+
+export function assertActivityLimits(activities: GoalActivity[]) {
+  let count = 0;
+  function visit(items: GoalActivity[], depth: number) {
+    if (items.length && depth >= 32)
+      throw new InputError("Se alcanzó el límite de 32 niveles del diagrama.");
+    for (const item of items) {
+      if (++count > 2000)
+        throw new InputError("Se alcanzó el límite de 2.000 ramas por meta.");
+      if ((item.subtasks?.length ?? 0) > 2000)
+        throw new InputError(
+          "Se alcanzó el límite de 2.000 subtareas por rama.",
+        );
+      if ((item.resources?.length ?? 0) > 50)
+        throw new InputError("Se alcanzó el límite de 50 recursos por rama.");
+      visit(item.children ?? [], depth + 1);
+    }
+  }
+  visit(activities, 0);
 }
 
 export function mapActivities(

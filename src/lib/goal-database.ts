@@ -2,21 +2,20 @@ import type { Client } from "@libsql/client";
 import type { Goal } from "./goals";
 import { restoreActivities } from "./activity-database";
 import { isGoalIcon } from "./goal-icons";
+import { validColor, validText } from "./input-validation";
 
 export type GoalFields = Pick<Goal, "name" | "description" | "icon" | "color">;
 
 export function parseGoalFields(value: unknown): GoalFields {
-  if (!value || typeof value !== "object") throw new Error("Invalid goal");
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid goal");
   const goal = value as GoalFields;
   if (
-    typeof goal.name !== "string" ||
+    !validText(goal.name, 100) ||
     !goal.name.trim() ||
-    goal.name.trim().length > 100 ||
-    typeof goal.description !== "string" ||
-    goal.description.length > 1000 ||
+    !validText(goal.description, 1000, true) ||
     !isGoalIcon(goal.icon) ||
-    typeof goal.color !== "string" ||
-    !/^#[a-f\d]{6}$/i.test(goal.color)
+    !validColor(goal.color)
   )
     throw new Error("Invalid goal");
   return {

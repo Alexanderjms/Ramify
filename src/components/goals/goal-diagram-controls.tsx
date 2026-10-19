@@ -1,6 +1,7 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
+import ValidatedForm from "@/components/validated-form";
 
 export function GoalDiagramSettings({
   id,
@@ -162,7 +163,7 @@ export function GoalDiagramZoomControls({
             </button>
           ))}
         </div>
-        <form
+        <ValidatedForm
           onSubmit={(event) => {
             event.preventDefault();
             const value = input.current!.valueAsNumber;
@@ -194,7 +195,7 @@ export function GoalDiagramZoomControls({
             </TooltipButton>
           </div>
           <p id={`${id}-hint`}>{t("Entre 35 % y 200 %")}</p>
-        </form>
+        </ValidatedForm>
       </div>
     </>
   );

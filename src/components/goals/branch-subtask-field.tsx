@@ -3,6 +3,7 @@ import type { GoalActivity, GoalActivityChanges } from "@/lib/goal-activities";
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
 import { animateField } from "./branch-field-animations";
+import ValidatedForm from "@/components/validated-form";
 
 export default function BranchSubtaskField({
   activity,
@@ -80,7 +81,7 @@ export default function BranchSubtaskField({
         </p>
       )}
       {addingTask ? (
-        <form
+        <ValidatedForm
           className="branch-inline-form branch-compact-form"
           aria-label={t("Añadir subtarea")}
           data-form="task"
@@ -89,11 +90,6 @@ export default function BranchSubtaskField({
             const input = event.currentTarget.elements.namedItem(
               "name",
             ) as HTMLInputElement;
-            if (!input.value.trim()) {
-              input.setCustomValidity(t("Escribe el nombre de la subtarea."));
-              input.reportValidity();
-              return;
-            }
             const task = {
               id: crypto.randomUUID(),
               name: input.value.trim(),
@@ -106,8 +102,6 @@ export default function BranchSubtaskField({
             ) {
               setAddingTask(false);
               setError("");
-            } else {
-              setError("No se pudo guardar la subtarea. Inténtalo de nuevo.");
             }
           }}
         >
@@ -116,9 +110,9 @@ export default function BranchSubtaskField({
             aria-label={t("Nombre de la subtarea")}
             placeholder={t("Nombre de la subtarea")}
             required
+            pattern={".*\\S.*"}
             maxLength={100}
             autoFocus
-            onInput={(event) => event.currentTarget.setCustomValidity("")}
           />
           <TooltipButton
             type="submit"
@@ -141,16 +135,22 @@ export default function BranchSubtaskField({
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
           </TooltipButton>
-        </form>
+        </ValidatedForm>
       ) : (
         <button
           type="button"
           className="branch-add-task"
+          disabled={children.length >= 2000}
           onClick={() => setAddingTask(true)}
         >
           <i aria-hidden="true" className="bi bi-plus-lg" />
           {t("Añadir subtarea")}
         </button>
+      )}
+      {children.length >= 2000 && (
+        <p className="branch-empty">
+          {t("Se alcanzó el límite de 2.000 subtareas por rama.")}
+        </p>
       )}
     </section>
   );

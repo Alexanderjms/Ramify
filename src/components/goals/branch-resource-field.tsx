@@ -3,6 +3,7 @@ import { useGoals } from "./goals-provider";
 import {
   isStoredGoalFile,
   validResourceUrl,
+  validGoalFileUrl,
   type GoalActivity,
   type GoalActivityChanges,
 } from "@/lib/goal-activities";
@@ -15,6 +16,8 @@ import {
 import { useLanguage } from "@/components/language-provider";
 import { TooltipButton } from "@/components/tooltip";
 import { animateField } from "./branch-field-animations";
+import ValidatedForm from "@/components/validated-form";
+import { errorMessage } from "@/lib/feedback";
 
 export default function BranchResourceField({
   activity,
@@ -49,11 +52,26 @@ export default function BranchResourceField({
                 className={`bi bi-${resource.fileName || /\.pdf(?:$|[?#])/i.test(resource.url) ? "file-earmark-text" : "box-arrow-up-right"}`}
               />
               <a
-                href={isStoredGoalFile(resource.url) ? "#" : resource.url}
+                href={
+                  isStoredGoalFile(resource.url)
+                    ? "#"
+                    : validResourceUrl(resource.url) ||
+                        (resource.fileName && validGoalFileUrl(resource.url))
+                      ? resource.url
+                      : undefined
+                }
                 target={resource.fileName ? undefined : "_blank"}
                 download={resource.fileName}
                 rel="noopener noreferrer"
                 onClick={async (event) => {
+                  if (
+                    !validResourceUrl(resource.url) &&
+                    !(resource.fileName && validGoalFileUrl(resource.url))
+                  ) {
+                    event.preventDefault();
+                    setError("Usa un enlace http:// o https:// válido.");
+                    return;
+                  }
                   if (!isStoredGoalFile(resource.url)) return;
                   event.preventDefault();
                   try {
@@ -62,9 +80,12 @@ export default function BranchResourceField({
                       resource.fileName!,
                       userId,
                     );
-                  } catch {
+                  } catch (error) {
                     setError(
-                      "No se pudo descargar el archivo. Comprueba tu conexión e inténtalo de nuevo.",
+                      errorMessage(
+                        error,
+                        "No se pudo descargar el archivo. Comprueba tu conexión e inténtalo de nuevo.",
+                      ),
                     );
                   }
                 }}
@@ -89,9 +110,12 @@ export default function BranchResourceField({
                   if (removed && isStoredGoalFile(resource.url)) {
                     try {
                       await removeGoalFile(resource.url, userId);
-                    } catch {
+                    } catch (error) {
                       setError(
-                        "Se quitó el recurso, pero no se pudo liberar el archivo. Se reintentará al sincronizar.",
+                        errorMessage(
+                          error,
+                          "Se quitó el recurso, pero no se pudo liberar el archivo. Se reintentará al sincronizar.",
+                        ),
                       );
                     }
                   }
@@ -105,7 +129,7 @@ export default function BranchResourceField({
         </ul>
       )}
       {addingResource ? (
-        <form
+        <ValidatedForm
           className="branch-inline-form branch-compact-form"
           aria-label={t("Añadir recurso")}
           data-form="resource"
@@ -115,10 +139,7 @@ export default function BranchResourceField({
             const urlInput = form.elements.namedItem("url") as HTMLInputElement;
             const url = urlInput.value.trim();
             if (!validResourceUrl(url)) {
-              urlInput.setCustomValidity(
-                t("Usa un enlace http:// o https:// válido."),
-              );
-              urlInput.reportValidity();
+              setError("Usa un enlace http:// o https:// válido.");
               return;
             }
             if (
@@ -135,12 +156,12 @@ export default function BranchResourceField({
           <input
             name="url"
             type="url"
+            pattern="https?://.+"
             aria-label={t("Enlace del recurso")}
             placeholder="https://…"
             maxLength={2000}
             required
             autoFocus
-            onInput={(event) => event.currentTarget.setCustomValidity("")}
           />
           <TooltipButton
             type="submit"
@@ -163,7 +184,7 @@ export default function BranchResourceField({
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
           </TooltipButton>
-        </form>
+        </ValidatedForm>
       ) : (
         <div className="branch-resource-actions">
           <TooltipButton
@@ -185,6 +206,11 @@ export default function BranchResourceField({
             {t(readingFile ? "Subiendo…" : "Adjuntar archivo")}
           </TooltipButton>
         </div>
+      )}
+      {(activity.resources?.length ?? 0) >= 50 && (
+        <p className="branch-empty">
+          {t("Se alcanzó el límite de 50 recursos por rama.")}
+        </p>
       )}
       <input
         ref={fileInput}
@@ -213,9 +239,12 @@ export default function BranchResourceField({
               ],
             }));
             if (!saved) await removeGoalFile(url, userId);
-          } catch {
+          } catch (error) {
             setError(
-              "No se pudo subir el archivo. Comprueba tu conexión e inténtalo de nuevo.",
+              errorMessage(
+                error,
+                "No se pudo subir el archivo. Comprueba tu conexión e inténtalo de nuevo.",
+              ),
             );
           } finally {
             setReadingFile(false);
