@@ -71,6 +71,12 @@ export default function GoalDiagram({
   const zoomId = useId();
   const [creating, setCreating] = useState<string | null>(null);
   const createTrigger = useRef<HTMLButtonElement | null>(null);
+  const closingEditor = useRef<Animation[]>([]);
+  useEffect(
+    () => () =>
+      closingEditor.current.forEach((animation) => animation.cancel()),
+    [],
+  );
   const settingsId = useId();
   const [context, setContext] = useState<DiagramContext | null>(null);
   const nodes: DiagramNode[] = [];
@@ -172,9 +178,49 @@ export default function GoalDiagram({
     onCollapseAll();
   }
 
-  function closeEditor() {
-    setCreating(null);
-    requestAnimationFrame(() => createTrigger.current?.focus());
+  function closeEditor(animate = true) {
+    if (closingEditor.current.length) return;
+    const finish = () => {
+      setCreating(null);
+      requestAnimationFrame(() => createTrigger.current?.focus());
+    };
+    if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      finish();
+      return;
+    }
+    const elements = viewport.current?.querySelectorAll<
+      HTMLElement | SVGElement
+    >("[data-draft]");
+    if (!elements?.length) {
+      finish();
+      return;
+    }
+    const easing = getComputedStyle(viewport.current!)
+      .getPropertyValue("--ease-out")
+      .trim();
+    const animations = Array.from(elements, (element) => {
+      const style = getComputedStyle(element);
+      return element.animate(
+        element instanceof SVGPathElement
+          ? [
+              { strokeDashoffset: style.strokeDashoffset },
+              { strokeDashoffset: 1 },
+            ]
+          : [
+              { opacity: style.opacity, transform: style.transform },
+              { opacity: 0, transform: "translateY(-3px) scale(0.97)" },
+            ],
+        { duration: 180, easing, fill: "forwards" },
+      );
+    });
+    closingEditor.current = animations;
+    void Promise.all(animations.map((animation) => animation.finished))
+      .then(() => {
+        if (closingEditor.current !== animations) return;
+        closingEditor.current = [];
+        finish();
+      })
+      .catch(() => {});
   }
 
   function addButton(parent: string, name: string) {
@@ -189,6 +235,12 @@ export default function GoalDiagram({
         aria-expanded={creating === parent}
         onClick={(event) => {
           createTrigger.current = event.currentTarget;
+          if (closingEditor.current.length) {
+            closingEditor.current.forEach((animation) => animation.cancel());
+            closingEditor.current = [];
+            setCreating(parent);
+            return;
+          }
           if (creating === parent) {
             closeEditor();
             return;

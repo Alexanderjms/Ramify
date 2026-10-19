@@ -45,7 +45,7 @@ export default function GoalDiagramCanvas({
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
   onColor: (id: string, color: string) => void;
-  onCloseEditor: () => void;
+  onCloseEditor: (animate?: boolean) => void;
   addButton: (parent: string, name: string) => ReactNode;
 }) {
   const { t, language } = useLanguage();
@@ -153,6 +153,9 @@ export default function GoalDiagramCanvas({
               {nodes.map((node) => (
                 <path
                   key={node.activity.id}
+                  data-draft={!node.activity.id || undefined}
+                  pathLength={!node.activity.id ? 1 : undefined}
+                  className={!node.activity.id ? "goal-draft-path" : undefined}
                   data-activity-id={node.activity.id || undefined}
                   pointerEvents="stroke"
                   d={`M${node.parentX} ${node.y - 48} C${node.parentX} ${node.y - 24},${node.x} ${node.y - 24},${node.x} ${node.y}`}
@@ -175,6 +178,20 @@ export default function GoalDiagramCanvas({
                   return (
                     <path
                       key={node.activity.id}
+                      data-draft={
+                        children.every((child) => !child.activity.id) ||
+                        undefined
+                      }
+                      pathLength={
+                        children.every((child) => !child.activity.id)
+                          ? 1
+                          : undefined
+                      }
+                      className={
+                        children.every((child) => !child.activity.id)
+                          ? "goal-draft-path"
+                          : undefined
+                      }
                       data-activity-id={node.activity.id}
                       pointerEvents="stroke"
                       d={`M${node.x} ${node.y} V${children.at(-1)!.y - 48}`}
@@ -188,6 +205,8 @@ export default function GoalDiagramCanvas({
                 .map((node) => (
                   <circle
                     key={node.activity.id}
+                    data-draft
+                    className="goal-draft-dot"
                     cx={node.x}
                     cy={node.y}
                     r="9"

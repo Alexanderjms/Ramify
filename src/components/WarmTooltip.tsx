@@ -265,6 +265,7 @@ export const WarmTooltipGroup = forwardRef<
     warmTimer: undefined,
   });
   const textRef = useRef<HTMLSpanElement | null>(null);
+  const tooltipRef = useRef<HTMLSpanElement | null>(null);
   const api = useRef<{
     show: (payload: Payload, mode: Mode) => void;
     hide: (tooltipId: string, instant?: boolean) => void;
@@ -400,7 +401,14 @@ export const WarmTooltipGroup = forwardRef<
 
   api.current.hide = (tooltipId: string, instant?: boolean) => {
     const c = st.current.current;
-    if (!c || c.id !== tooltipId || st.current.state !== "open") return;
+    if (!c || c.id !== tooltipId) return;
+    if (instant && st.current.state === "closing") {
+      clearTimeout(st.current.closeTimer);
+      presence.jump(0);
+      finishClose();
+      return;
+    }
+    if (st.current.state !== "open") return;
     clearTimeout(st.current.leaveTimer);
     if (instant || st.current.instant) {
       beginClose(true);
@@ -435,32 +443,56 @@ export const WarmTooltipGroup = forwardRef<
     const c = st.current.current;
     const text = textRef.current;
     if (!c || !text || state !== "open") return;
-    const [tx, ty] = anchorOf(c.trigger.getBoundingClientRect(), c.side, c.gap);
-    const tw = text.offsetWidth + c.px * 2;
-    const th = text.offsetHeight + c.py * 2;
-    const mode = st.current.mode;
-    if (mode === "move" && !reduce && travel > 0) {
-      const spring = {
-        type: "spring" as const,
-        duration: travel / 1000,
-        bounce: 0.1,
-      };
-      animate(ax, tx, spring);
-      animate(ay, ty, spring);
-      animate(w, tw, spring);
-      animate(h, th, spring);
-      animate(presence, 1, { duration: 0.12, ease: EASE_OUT });
-      return;
+    const tooltip = tooltipRef.current;
+    if (!tooltip?.isConnected) return;
+    function measure() {
+      if (!c || !text) return;
+      if (
+        !tooltip?.isConnected ||
+        st.current.current !== c ||
+        st.current.state !== "open"
+      )
+        return;
+      if (!tooltip.matches(":popover-open")) tooltip.showPopover();
+      const [tx, ty] = anchorOf(
+        c.trigger.getBoundingClientRect(),
+        c.side,
+        c.gap,
+      );
+      const tw = text.offsetWidth + c.px * 2;
+      const th = text.offsetHeight + c.py * 2;
+      const mode = st.current.mode;
+      if (mode === "move" && !reduce && travel > 0) {
+        const spring = {
+          type: "spring" as const,
+          duration: travel / 1000,
+          bounce: 0.1,
+        };
+        animate(ax, tx, spring);
+        animate(ay, ty, spring);
+        animate(w, tw, spring);
+        animate(h, th, spring);
+        animate(presence, 1, { duration: 0.12, ease: EASE_OUT });
+        return;
+      }
+      ax.jump(tx);
+      ay.jump(ty);
+      w.jump(tw);
+      h.jump(th);
+      if (mode === "cold") {
+        presence.jump(0);
+        animate(presence, 1, {
+          duration: c.popDuration / 1000,
+          ease: EASE_OUT,
+        });
+      } else {
+        presence.jump(1);
+      }
     }
-    ax.jump(tx);
-    ay.jump(ty);
-    w.jump(tw);
-    h.jump(th);
-    if (mode === "cold") {
-      presence.jump(0);
-      animate(presence, 1, { duration: c.popDuration / 1000, ease: EASE_OUT });
-    } else {
-      presence.jump(1);
+    if (tooltip.matches(":popover-open")) measure();
+    else {
+      const frame = requestAnimationFrame(measure);
+      return () => cancelAnimationFrame(frame);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, state]);
@@ -473,6 +505,14 @@ export const WarmTooltipGroup = forwardRef<
       raf = requestAnimationFrame(() => {
         const c = st.current.current;
         if (!c) return;
+        if (
+          !c.trigger.isConnected ||
+          !c.trigger.getClientRects().length ||
+          c.trigger.closest("dialog:not([open])")
+        ) {
+          api.current.hide(c.id, true);
+          return;
+        }
         const text = textRef.current;
         if (text) {
           w.jump(text.offsetWidth + c.px * 2);
@@ -497,16 +537,28 @@ export const WarmTooltipGroup = forwardRef<
       event.stopPropagation();
       api.current.hide(st.current.current.id, true);
     };
+    const onToggle = (event: Event) => {
+      const c = st.current.current;
+      if (
+        c &&
+        event.target instanceof HTMLDialogElement &&
+        !event.target.open &&
+        event.target.contains(c.trigger)
+      )
+        api.current.hide(c.id, true);
+    };
     window.addEventListener("scroll", follow, { capture: true, passive: true });
     window.addEventListener("resize", follow);
     document.addEventListener("visibilitychange", onHidden);
     document.addEventListener("keydown", onEscape, true);
+    document.addEventListener("toggle", onToggle, true);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", follow, { capture: true });
       window.removeEventListener("resize", follow);
       document.removeEventListener("visibilitychange", onHidden);
       document.removeEventListener("keydown", onEscape, true);
+      document.removeEventListener("toggle", onToggle, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
@@ -531,12 +583,7 @@ export const WarmTooltipGroup = forwardRef<
         ? createPortal(
             <motion.span
               popover="manual"
-              ref={(element) => {
-                requestAnimationFrame(() => {
-                  if (element?.isConnected && !element.matches(":popover-open"))
-                    element.showPopover();
-                });
-              }}
+              ref={tooltipRef}
               id={id}
               role="tooltip"
               className="fixed top-0 left-0 z-[9999] m-0 overflow-visible border-0 bg-transparent p-0 [font-family:inherit]"
@@ -732,7 +779,7 @@ const Trigger: React.FC<TriggerProps> = ({
         },
         onPointerDown: (e: React.PointerEvent<HTMLSpanElement>) => {
           if (e.pointerType === "mouse") {
-            hide(false);
+            hide(true);
             return;
           }
           try {

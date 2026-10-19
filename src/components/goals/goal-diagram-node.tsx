@@ -6,7 +6,7 @@ import {
 } from "react";
 import { type GoalActivity } from "@/lib/goal-activities";
 import { ActivityStatus } from "./activity-status";
-import Tooltip, { TooltipButton } from "@/components/tooltip";
+import Tooltip from "@/components/tooltip";
 import ValidatedForm from "@/components/validated-form";
 
 export type DiagramNode = {
@@ -61,12 +61,13 @@ export default function GoalDiagramNode({
   onSelect: (activity: GoalActivity, source: HTMLElement) => void;
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
-  onCloseEditor: () => void;
+  onCloseEditor: (animate?: boolean) => void;
   addButton: (parent: string, name: string) => ReactNode;
 }) {
   return (
     <div
       className="goal-node-label"
+      data-draft={!activity.id || undefined}
       data-activity-id={activity.id || undefined}
       data-reordering={reordering?.id === activity.id || undefined}
       data-drop-position={
@@ -94,7 +95,7 @@ export default function GoalDiagramNode({
             if (event.key === "Escape") {
               event.preventDefault();
               event.stopPropagation();
-              onCloseEditor();
+              onCloseEditor(false);
             }
           }}
           onSubmit={(event) => {
@@ -103,7 +104,7 @@ export default function GoalDiagramNode({
               "name",
             ) as HTMLInputElement;
             if (creating !== null && onCreate(creating, input.value))
-              onCloseEditor();
+              onCloseEditor(false);
           }}
         >
           <input
@@ -122,21 +123,16 @@ export default function GoalDiagramNode({
               })
             }
           />
-          <TooltipButton
-            type="submit"
-            aria-label={t("Guardar meta")}
-            title={t("Guardar (Enter)")}
-          >
+          <button type="submit" aria-label={t("Guardar meta")}>
             <i aria-hidden="true" className="bi bi-check-lg" />
-          </TooltipButton>
-          <TooltipButton
+          </button>
+          <button
             type="button"
             aria-label={t("Cancelar meta")}
-            title={t("Cancelar (Escape)")}
-            onClick={onCloseEditor}
+            onClick={() => onCloseEditor()}
           >
             <i aria-hidden="true" className="bi bi-x-lg" />
-          </TooltipButton>
+          </button>
         </ValidatedForm>
       ) : (
         <>

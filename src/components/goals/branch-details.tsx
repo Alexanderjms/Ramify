@@ -38,6 +38,37 @@ export default function BranchDetails({
 
   useEffect(() => {
     const panel = dialogRef.current;
+    if (!panel || !activity?.id) return;
+    let outside = false;
+    function isOutside(target: EventTarget | null) {
+      return (
+        target instanceof Element &&
+        !panel!.contains(target) &&
+        !target.closest(
+          "dialog[open], [popover]:popover-open, .goal-node-label, .branch-pinned-task, [data-sonner-toaster]",
+        )
+      );
+    }
+    function pointerDown(event: PointerEvent) {
+      outside =
+        event.button === 0 &&
+        isOutside(event.target) &&
+        !document.querySelector("dialog:modal");
+    }
+    function click(event: MouseEvent) {
+      if (outside && panel?.open && isOutside(event.target)) panel.close();
+      outside = false;
+    }
+    document.addEventListener("pointerdown", pointerDown, true);
+    document.addEventListener("click", click);
+    return () => {
+      document.removeEventListener("pointerdown", pointerDown, true);
+      document.removeEventListener("click", click);
+    };
+  }, [activity?.id, dialogRef]);
+
+  useEffect(() => {
+    const panel = dialogRef.current;
     const path = connector.current;
     const pin = pinnedTask.current;
     const canvas = source?.closest(".goal-canvas");
@@ -146,7 +177,12 @@ export default function BranchDetails({
       schedule();
     }
     function escape(event: KeyboardEvent) {
-      if (event.key === "Escape" && panel?.open && !event.defaultPrevented)
+      if (
+        event.key === "Escape" &&
+        panel?.open &&
+        !event.defaultPrevented &&
+        !document.querySelector("dialog:modal, [popover]:popover-open")
+      )
         panel.close();
     }
     const resize = new ResizeObserver(schedule);

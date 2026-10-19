@@ -133,6 +133,21 @@
 .goal-diagram-content svg path {
   transition: d 280ms ease;
 }
+.goal-diagram-content svg .goal-draft-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 180ms var(--ease-out);
+}
+@starting-style {
+  .goal-diagram-content svg .goal-draft-path {
+    stroke-dashoffset: 1;
+  }
+}
+.goal-draft-dot {
+  animation: goal-node-in 180ms var(--ease-out);
+  transform-box: fill-box;
+  transform-origin: center;
+}
 .goal-diagram-content svg circle {
   transition:
     cx 280ms ease,
