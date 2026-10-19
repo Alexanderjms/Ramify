@@ -8,13 +8,13 @@ export default function AppToaster() {
   return (
     <GooeyToaster
       theme="dark"
-      position="bottom-right"
+      position="top-center"
       preset="subtle"
       closeButton
       closeOnEscape={false}
       showTimestamp={false}
       maxQueue={4}
-      offset="max(16px, env(safe-area-inset-bottom))"
+      offset={16}
     />
   );
 }
