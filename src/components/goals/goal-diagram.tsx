@@ -178,11 +178,25 @@ export default function GoalDiagram({
     onCollapseAll();
   }
 
-  function closeEditor(animate = true) {
+  function closeEditor(animate = true, saved = false) {
     if (closingEditor.current.length) return;
+    const previousIds = saved
+      ? new Set(nodes.map((node) => node.activity.id))
+      : null;
     const finish = () => {
       setCreating(null);
-      requestAnimationFrame(() => createTrigger.current?.focus());
+      requestAnimationFrame(() => {
+        const target = previousIds
+          ? Array.from(
+              viewport.current?.querySelectorAll<HTMLElement>(
+                ".goal-node-label[data-activity-id]",
+              ) ?? [],
+            )
+              .find((element) => !previousIds.has(element.dataset.activityId!))
+              ?.querySelector<HTMLButtonElement>(".goal-node-title")
+          : createTrigger.current;
+        target?.focus({ preventScroll: true });
+      });
     };
     if (!animate || matchMedia("(prefers-reduced-motion: reduce)").matches) {
       finish();

@@ -45,7 +45,7 @@ export default function GoalDiagramCanvas({
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
   onColor: (id: string, color: string) => void;
-  onCloseEditor: (animate?: boolean) => void;
+  onCloseEditor: (animate?: boolean, saved?: boolean) => void;
   addButton: (parent: string, name: string) => ReactNode;
 }) {
   const { t, language } = useLanguage();

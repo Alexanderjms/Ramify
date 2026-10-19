@@ -61,7 +61,7 @@ export default function GoalDiagramNode({
   onSelect: (activity: GoalActivity, source: HTMLElement) => void;
   onCreate: (parent: string, name: string) => boolean;
   onMove: (parent: string, id: string, target: string) => void;
-  onCloseEditor: (animate?: boolean) => void;
+  onCloseEditor: (animate?: boolean, saved?: boolean) => void;
   addButton: (parent: string, name: string) => ReactNode;
 }) {
   return (
@@ -104,7 +104,7 @@ export default function GoalDiagramNode({
               "name",
             ) as HTMLInputElement;
             if (creating !== null && onCreate(creating, input.value))
-              onCloseEditor(false);
+              onCloseEditor(false, true);
           }}
         >
           <input
