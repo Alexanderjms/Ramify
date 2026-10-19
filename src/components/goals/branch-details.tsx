@@ -73,6 +73,7 @@ export default function BranchDetails({
     const pin = pinnedTask.current;
     const canvas = source?.closest(".goal-canvas");
     if (!panel || !path || !source || !canvas || !activity?.id) return;
+    path.ownerSVGElement?.style.setProperty("color", activity.color);
     source.setAttribute("data-details-selected", "");
     source.style.setProperty("--branch-color", activity?.color ?? "#3B82F6");
     let frame = 0;
@@ -222,11 +223,7 @@ export default function BranchDetails({
 
   return (
     <div className="branch-details-layer">
-      <svg
-        className="branch-details-connector"
-        aria-hidden="true"
-        style={{ color: activity?.color ?? "#3B82F6" }}
-      >
+      <svg className="branch-details-connector" aria-hidden="true">
         <defs>
           <path id={`${connectionId}-path`} ref={connector} pathLength="1" />
           <linearGradient
