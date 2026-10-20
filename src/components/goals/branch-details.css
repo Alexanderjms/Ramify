@@ -5,61 +5,6 @@
   overflow: clip;
   pointer-events: none;
 }
-.branch-details-connector {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0ms linear 250ms;
-}
-.branch-details-layer:has(.branch-details[open]) .branch-details-connector {
-  opacity: 1;
-  transition: opacity 150ms ease;
-}
-.branch-details-connector use {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  transition: stroke-dashoffset 250ms ease;
-}
-.branch-details-layer:has(.branch-details[open]) .branch-details-connector use {
-  stroke-dashoffset: 0;
-}
-.branch-cable-halo {
-  opacity: 0.07;
-}
-.branch-pinned-task {
-  position: absolute;
-  pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
-  border: 1px solid;
-  border-radius: 6px;
-  background: #09090b;
-  color: #e4e4e7;
-  font-size: 13px;
-  cursor: pointer;
-  box-shadow: 0 4px 20px #0008;
-}
-.branch-pinned-task[hidden] {
-  display: none;
-}
-.branch-pinned-task span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.branch-pinned-task i {
-  flex-shrink: 0;
-}
-.branch-pinned-task:focus-visible {
-  outline: 2px solid white;
-  outline-offset: 4px;
-}
-
 .branch-details {
   position: absolute;
   pointer-events: auto;
@@ -500,13 +445,6 @@
       opacity 150ms var(--ease-out),
       display 150ms allow-discrete,
       overlay 150ms allow-discrete !important;
-  }
-  .branch-details-layer .branch-details-connector {
-    transition: opacity 150ms ease;
-  }
-  .branch-details-connector use {
-    stroke-dashoffset: 0;
-    transition: none;
   }
   @starting-style {
     .branch-details[open] {
