@@ -1,4 +1,6 @@
 export const english: Record<string, string> = {
+  "Abrir menú": "Open menu",
+  "Cerrar menú": "Close menu",
   "El nombre no puede superar los 100 caracteres.":
     "The name cannot exceed 100 characters.",
   "No se pudo obtener el título": "Could not get the title",

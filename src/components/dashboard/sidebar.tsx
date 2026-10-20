@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/icon";
@@ -14,14 +14,19 @@ export default function Sidebar({
   collapsed,
   page,
   goalId,
+  mobile = false,
+  onClose,
 }: {
   collapsed: boolean;
   page: "Dashboard" | "Metas";
   goalId?: string;
+  mobile?: boolean;
+  onClose?: () => void;
 }) {
   const { goals, loading } = useGoals();
   const { t } = useLanguage();
   const [goalsExpanded, setGoalsExpanded] = useState(Boolean(goalId));
+  const goalsListId = useId();
   const metasLabel = (
     <>
       <i
@@ -44,6 +49,7 @@ export default function Sidebar({
       className={`dashboard-sidebar sticky top-0 flex h-svh shrink-0 flex-col gap-6 border-r border-zinc-800 px-3 pb-3 sm:px-4 sm:pb-4 ${collapsed ? "w-[68px]" : "w-[68px] md:w-[252px]"}`}
       aria-label={t("Barra lateral")}
       data-collapsed={collapsed}
+      data-mobile={mobile || undefined}
     >
       <div className="-mx-3 flex h-14 shrink-0 items-center gap-2.5 border-b border-zinc-800 px-4 sm:-mx-4">
         <Link
@@ -63,6 +69,17 @@ export default function Sidebar({
             Ramify
           </span>
         </Link>
+        {mobile && (
+          <button
+            type="button"
+            autoFocus
+            onClick={onClose}
+            aria-label={t("Cerrar menú")}
+            className="ml-auto flex size-11 shrink-0 items-center justify-center rounded text-zinc-300"
+          >
+            <i aria-hidden="true" className="bi bi-x-lg" />
+          </button>
+        )}
       </div>
 
       <nav
@@ -101,7 +118,7 @@ export default function Sidebar({
               type="button"
               aria-label={t(goalsExpanded ? "Ocultar metas" : "Mostrar metas")}
               aria-expanded={goalsExpanded}
-              aria-controls="sidebar-goals-list"
+              aria-controls={goalsListId}
               onClick={() => setGoalsExpanded((open) => !open)}
               className="sidebar-label absolute right-0 top-0.5 hidden size-8 cursor-pointer items-center justify-center rounded text-zinc-400 md:flex"
               inert={collapsed}
@@ -113,7 +130,7 @@ export default function Sidebar({
             </button>
           </div>
           <div
-            id="sidebar-goals-list"
+            id={goalsListId}
             className="sidebar-goals-content hidden md:grid"
             data-open={goalsExpanded && !collapsed}
             inert={!goalsExpanded || collapsed}

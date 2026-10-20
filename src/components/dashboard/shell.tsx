@@ -1,9 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import DashboardHeader from "@/components/dashboard/header";
 import Sidebar from "@/components/dashboard/sidebar";
 import "@/components/ui-motion.css";
+import { useLanguage } from "@/components/language-provider";
+import "./mobile-sidebar.css";
 
 export default function DashboardShell({
   children,
@@ -16,6 +18,17 @@ export default function DashboardShell({
   canvas?: boolean;
   goalId?: string;
 }) {
+  const menu = useRef<HTMLDialogElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t } = useLanguage();
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => {
+      if (desktop.matches) menu.current?.close();
+    };
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => desktop.removeEventListener("change", closeOnDesktop);
+  }, []);
   return (
     <div
       onKeyDownCapture={(event) => {
@@ -30,8 +43,37 @@ export default function DashboardShell({
       className="dashboard-shell dashboard-motion flex min-h-dvh bg-black text-white [color-scheme:dark] [&_button]:focus-visible:outline-2 [&_button]:focus-visible:outline-offset-4 [&_button]:focus-visible:outline-white [&_a]:focus-visible:outline-2 [&_a]:focus-visible:outline-offset-4 [&_a]:focus-visible:outline-white"
     >
       <Sidebar collapsed={false} page={page} goalId={goalId} />
+      <dialog
+        ref={menu}
+        id="mobile-sidebar"
+        aria-label={t("Navegación principal")}
+        className="mobile-sidebar"
+        onClose={() => setSidebarOpen(false)}
+        onClick={(event) => {
+          if ((event.target as Element).closest("a[href]"))
+            menu.current?.close();
+        }}
+      >
+        <Sidebar
+          collapsed={false}
+          page={page}
+          goalId={goalId}
+          mobile
+          onClose={() => menu.current?.close()}
+        />
+      </dialog>
       <div className="min-w-0 flex-1">
-        <DashboardHeader collapsed={false} title={page} goalId={goalId} />
+        <DashboardHeader
+          collapsed={false}
+          title={page}
+          goalId={goalId}
+          sidebarOpen={sidebarOpen}
+          onOpenSidebar={() => {
+            menu.current?.showModal();
+            menu.current?.querySelector<HTMLButtonElement>("button")?.focus();
+            setSidebarOpen(true);
+          }}
+        />
         <main
           className={
             canvas

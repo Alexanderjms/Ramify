@@ -14,10 +14,14 @@ export default function DashboardHeader({
   collapsed,
   title,
   goalId,
+  onOpenSidebar,
+  sidebarOpen = false,
 }: {
   collapsed: boolean;
   title: string;
   goalId?: string;
+  onOpenSidebar?: () => void;
+  sidebarOpen?: boolean;
 }) {
   const { goals, loading } = useGoals();
   const { t } = useLanguage();
@@ -28,10 +32,21 @@ export default function DashboardHeader({
   }, [pageTitle]);
   return (
     <header className="flex h-14 min-w-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 sm:gap-4 sm:px-8">
+      <button
+        type="button"
+        onClick={onOpenSidebar}
+        aria-label={t("Abrir menú")}
+        aria-haspopup="dialog"
+        aria-controls="mobile-sidebar"
+        aria-expanded={sidebarOpen}
+        className="flex size-11 shrink-0 items-center justify-center rounded text-zinc-300 md:hidden"
+      >
+        <i aria-hidden="true" className="bi bi-list text-xl" />
+      </button>
       <nav
         aria-label={t("Ruta de navegación")}
         data-sidebar-collapsed={collapsed}
-        className="dashboard-breadcrumb flex min-w-0 items-center gap-[9px] text-xs"
+        className="dashboard-breadcrumb mr-auto flex min-w-0 items-center gap-[9px] text-xs"
       >
         {goal ? (
           <>
