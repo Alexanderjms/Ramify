@@ -189,6 +189,20 @@
 .branch-properties dt {
   color: #a1a1aa;
 }
+.branch-properties > .branch-status-property {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.branch-status-property .branch-status-options {
+  --jr-px: 6px !important;
+  --jr-font: 11px !important;
+}
+@media (min-width: 400px) {
+  .branch-properties > .branch-status-property {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+  }
+}
 .branch-properties dd {
   display: flex;
   align-items: center;

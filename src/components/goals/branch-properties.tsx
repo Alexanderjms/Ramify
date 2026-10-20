@@ -1,9 +1,8 @@
 import type { GoalActivity, GoalActivityChanges } from "@/lib/goal-activities";
 import { useLanguage } from "@/components/language-provider";
-import Select from "@/components/select";
 import JellyRadio from "@/components/JellyRadio";
 import DatePicker from "@/components/date-picker";
-import { ActivityStatus } from "./goal-diagram";
+import { ActivityStatus } from "./activity-status";
 
 export default function BranchProperties({
   activity,
@@ -15,31 +14,42 @@ export default function BranchProperties({
   const { t } = useLanguage();
   return (
     <dl className="branch-properties">
-      <div>
+      <div className="branch-status-property">
         <dt>{t("Estado")}</dt>
         <dd data-field="status">
-          <Select
-            label="Estado"
+          <JellyRadio
+            ariaLabel={t("Estado")}
             value={activity.status}
-            options={[
+            size="sm"
+            gap={4}
+            swell={0.12}
+            barge={3}
+            className="branch-status-options"
+            items={[
               {
                 value: "pending",
-                label: "Pendiente",
+                label: t("Pendiente"),
                 icon: <ActivityStatus status="pending" />,
               },
               {
                 value: "progress",
-                label: "En proceso",
+                label: t("En proceso"),
                 icon: <ActivityStatus status="progress" />,
               },
               {
                 value: "completed",
-                label: "Completada",
+                label: t("Completada"),
                 icon: <ActivityStatus status="completed" />,
               },
             ]}
-            icon={<ActivityStatus status={activity.status} />}
-            onChange={(status) => onUpdate({ status })}
+            onChange={(status) => {
+              if (
+                status === "pending" ||
+                status === "progress" ||
+                status === "completed"
+              )
+                onUpdate({ status });
+            }}
           />
         </dd>
       </div>
