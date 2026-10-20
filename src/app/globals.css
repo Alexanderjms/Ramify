@@ -89,6 +89,24 @@ textarea[aria-invalid="true"],
   overflow-wrap: anywhere;
 }
 
+[data-sonner-toast] .gooey-wrapper .gooey-title,
+[data-sonner-toast] .gooey-wrapper .gooey-description,
+[data-sonner-toast] .gooey-wrapper .gooey-actionButton {
+  color: #fff !important;
+}
+
+[data-sonner-toast] .gooey-wrapper .gooey-actionButton {
+  background: #3f3f46 !important;
+}
+
+[data-sonner-toast] .gooey-wrapper .gooey-actionButton:hover {
+  background: #52525b !important;
+}
+
+[data-sonner-toast] .gooey-wrapper .gooey-actionButton:active {
+  background: #3f3f46 !important;
+}
+
 @media (pointer: coarse) {
   input:not(
     [type="checkbox"],
