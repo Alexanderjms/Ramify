@@ -189,6 +189,12 @@
 .branch-properties dt {
   color: #a1a1aa;
 }
+.branch-properties [role="radio"][aria-checked="true"] .text-green-500 {
+  color: #15803d;
+}
+.branch-properties [role="radio"][aria-checked="true"] .bg-green-500 {
+  background-color: #15803d;
+}
 .branch-properties > .branch-status-property {
   grid-template-columns: minmax(0, 1fr);
   gap: 4px;
