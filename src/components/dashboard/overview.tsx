@@ -48,9 +48,9 @@ export default function DashboardOverview() {
   return (
     <RecentGoals
       loading={loading && goals.length === 0}
-      goals={[...goals].sort(
-        (a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0),
-      )}
+      goals={[...goals]
+        .sort((a, b) => (b.lastActivityAt ?? 0) - (a.lastActivityAt ?? 0))
+        .slice(0, 3)}
     />
   );
 }
