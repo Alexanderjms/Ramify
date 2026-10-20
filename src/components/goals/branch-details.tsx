@@ -30,6 +30,7 @@ export default function BranchDetails({
   onRetrySync?: () => void;
 }) {
   const connector = useRef<SVGPathElement>(null);
+  const labelMask = useRef<SVGPathElement>(null);
   const { t, language } = useLanguage();
   const terminals = useRef<SVGGElement>(null);
   const startTerminal = useRef<SVGGElement>(null);
@@ -89,6 +90,21 @@ export default function BranchDetails({
       const origin = source.getBoundingClientRect();
       const view = canvas.getBoundingClientRect();
       const target = panel.getBoundingClientRect();
+      if (labelMask.current) {
+        labelMask.current.setAttribute(
+          "d",
+          Array.from(
+            canvas.querySelectorAll(".goal-node-label, .goal-root-label"),
+          )
+            .map((label) => {
+              const bounds = label.getBoundingClientRect();
+              if (bounds.bottom < view.top || bounds.top > view.bottom)
+                return "";
+              return `M${bounds.left - 4} ${bounds.top - 2}h${bounds.width + 8}v${bounds.height + 4}h-${bounds.width + 8}Z`;
+            })
+            .join(" "),
+        );
+      }
       const headingElement = panel.querySelector("h2");
       if (!headingElement) return;
       const heading = headingElement.getBoundingClientRect();
@@ -225,6 +241,10 @@ export default function BranchDetails({
     <div className="branch-details-layer">
       <svg className="branch-details-connector" aria-hidden="true">
         <defs>
+          <mask id={`${connectionId}-labels`} maskUnits="userSpaceOnUse">
+            <rect width="100%" height="100%" fill="white" />
+            <path ref={labelMask} fill="black" />
+          </mask>
           <path id={`${connectionId}-path`} ref={connector} pathLength="1" />
           <linearGradient
             id={`${connectionId}-light`}
@@ -239,6 +259,7 @@ export default function BranchDetails({
           </linearGradient>
         </defs>
         <use
+          mask={`url(#${connectionId}-labels)`}
           href={`#${connectionId}-path`}
           fill="none"
           stroke="currentColor"
@@ -246,6 +267,7 @@ export default function BranchDetails({
           className="branch-cable-halo"
         />
         <use
+          mask={`url(#${connectionId}-labels)`}
           href={`#${connectionId}-path`}
           fill="none"
           stroke={`url(#${connectionId}-light)`}
