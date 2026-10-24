@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/icon";
@@ -23,9 +24,17 @@ export default function Sidebar({
   mobile?: boolean;
   onClose?: () => void;
 }) {
-  const { goals, loading } = useGoals();
+  const { goals, loading, userId } = useGoals();
   const { t } = useLanguage();
-  const [goalsExpanded, setGoalsExpanded] = useState(Boolean(goalId));
+  const queryClient = useQueryClient();
+  const expansionKey = ["sidebar-goals-expanded", userId];
+  const { data: goalsExpanded } = useQuery({
+    queryKey: expansionKey,
+    initialData: Boolean(goalId),
+    queryFn: () => Boolean(goalId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
   const goalsListId = useId();
   const metasLabel = (
     <>
@@ -106,7 +115,7 @@ export default function Sidebar({
               href="/metas"
               aria-current={page === "Metas" && !goalId ? "page" : undefined}
               aria-label={t("Metas")}
-              className={`${page === "Metas" ? "" : "paint-hover"} flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden rounded px-2.5 py-[9px] text-[13px]`}
+              className={`${page === "Metas" ? "" : "paint-hover"} flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden rounded px-2.5 py-[9px] text-[13px] md:pr-10`}
             >
               {page === "Metas" ? (
                 metasLabel
@@ -119,8 +128,10 @@ export default function Sidebar({
               aria-label={t(goalsExpanded ? "Ocultar metas" : "Mostrar metas")}
               aria-expanded={goalsExpanded}
               aria-controls={goalsListId}
-              onClick={() => setGoalsExpanded((open) => !open)}
-              className="sidebar-label absolute right-0 top-0.5 hidden size-8 cursor-pointer items-center justify-center rounded text-zinc-400 md:flex"
+              onClick={() =>
+                queryClient.setQueryData(expansionKey, !goalsExpanded)
+              }
+              className="sidebar-label absolute right-0 top-0.5 z-10 hidden size-8 cursor-pointer items-center justify-center rounded text-zinc-400 md:flex"
               inert={collapsed}
             >
               <Icon
