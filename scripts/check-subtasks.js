@@ -185,9 +185,121 @@ const { migrate } = require("./db-migrate.cjs");
     await expect
       .poll(async () => (await remote()).subtasks[0]?.name)
       .toBe("Nueva subtarea");
+
+    async function captureExit(selector, close) {
+      await delay(300);
+      await page.evaluate((selector) => {
+        const element = document.querySelector(selector);
+        window.drawerExit = (async () => {
+          const frames = [];
+          const start = performance.now();
+          while (performance.now() - start < 500) {
+            await new Promise(requestAnimationFrame);
+            const style = getComputedStyle(element);
+            frames.push({
+              open: element.open,
+              display: style.display,
+              opacity: Number(style.opacity),
+              transform: style.transform,
+              text: element.textContent,
+            });
+          }
+          return frames;
+        })();
+      }, selector);
+      await close();
+      if (process.env.UI_SCREENSHOTS) {
+        await delay(40);
+        await page.screenshot({
+          path: `${process.env.UI_SCREENSHOTS}/drawer-exit-${selector === ".branch-details" ? "details" : "menu"}.png`,
+        });
+      }
+      return page.evaluate(() => window.drawerExit);
+    }
+    const detailsExit = await captureExit(".branch-details", () =>
+      panel
+        .getByRole("button", {
+          name: "Cerrar detalles de la meta",
+          exact: true,
+        })
+        .click(),
+    );
+    await page.getByRole("button", { name: "Abrir menú", exact: true }).click();
+    const menuExit = await captureExit("#mobile-sidebar", () =>
+      page.getByRole("button", { name: "Cerrar menú", exact: true }).click(),
+    );
+    for (const [name, frames, content] of [
+      ["Branch details", detailsExit, branch.notes],
+      ["Mobile menu", menuExit, "Ramify"],
+    ]) {
+      const closing = frames.filter(
+        (frame) =>
+          !frame.open &&
+          frame.display !== "none" &&
+          frame.opacity > 0 &&
+          frame.opacity < 1,
+      );
+      assert.ok(closing.length > 2, `${name} must visibly animate its exit`);
+      assert.ok(
+        closing.every((frame) => frame.text.includes(content)),
+        `${name} must keep its content mounted throughout exit`,
+      );
+      assert.equal(frames.at(-1).display, "none");
+    }
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const branchButton = page.getByRole("button", {
+      name: branch.name,
+      exact: true,
+    });
+    await branchButton.click();
+    await delay(300);
+    await panel
+      .getByRole("button", { name: "Cerrar detalles de la meta", exact: true })
+      .click();
+    await delay(40);
+    await branchButton.click();
+    await delay(300);
+    await expect(
+      panel.locator(".branch-field-text").filter({ hasText: branch.notes }),
+    ).toBeVisible();
+    const outsideExit = await captureExit(".branch-details", () =>
+      page.mouse.click(600, 700),
+    );
+    assert.ok(
+      outsideExit.some(
+        (frame) =>
+          !frame.open &&
+          frame.opacity > 0 &&
+          frame.opacity < 1 &&
+          frame.text.includes(branch.notes),
+      ),
+      "Outside click must also keep the panel content while sliding out",
+    );
+    await expect(page.locator(".branch-fields")).toHaveCount(0);
+
+    await branchButton.click();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".branch-details")).not.toHaveAttribute("open");
+    await expect(page.locator(".branch-fields")).toHaveCount(0);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await branchButton.click();
+    const reducedExit = await captureExit(".branch-details", () =>
+      panel
+        .getByRole("button", {
+          name: "Cerrar detalles de la meta",
+          exact: true,
+        })
+        .click(),
+    );
+    assert.ok(
+      reducedExit.every((frame) => frame.transform === "none"),
+      "Reduced motion must fade without sliding",
+    );
+    assert.equal(reducedExit.at(-1).display, "none");
     assert.deepEqual(errors, []);
     console.log(
-      "OK: no toggle tooltip; desktop/mobile; validation; Escape cancel; edit/toggle/delete/add persist; sibling and nested data preserved.",
+      "OK: subtasks persist; desktop/mobile drawer exits retain content; outside click; quick reopen; Escape; reduced motion.",
     );
   } finally {
     await browser?.close();

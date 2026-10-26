@@ -93,7 +93,13 @@ export default function BranchDetails({
     <div className="branch-details-layer">
       <dialog
         ref={dialogRef}
-        onClose={onClose}
+        onClose={async (event) => {
+          const panel = event.currentTarget;
+          await Promise.allSettled(
+            panel.getAnimations().map((animation) => animation.finished),
+          );
+          if (!panel.open && panel.getAnimations().length === 0) onClose?.();
+        }}
         aria-labelledby="branch-details-title"
         className="branch-details app-scrollbar"
       >
