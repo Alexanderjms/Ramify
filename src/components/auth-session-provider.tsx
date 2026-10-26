@@ -20,7 +20,11 @@ export default function AuthSessionProvider({
   const userId = session.user?.id;
   if (!userId) throw new Error("Authenticated user is required");
   return (
-    <SessionProvider session={session}>
+    <SessionProvider
+      session={session}
+      refetchInterval={5 * 60}
+      refetchWhenOffline={false}
+    >
       <QueryProvider key={userId}>
         <UserPreferencesProvider
           key={userId}

@@ -1,3 +1,6 @@
+export const SESSION_EXPIRED_MESSAGE =
+  "Tu sesión ha caducado. Vuelve a iniciar sesión; tus cambios locales se conservan.";
+
 export function responseError(response: Response) {
   return Object.assign(new Error("Request failed"), {
     status: response.status,
@@ -14,7 +17,7 @@ export function errorMessage(error: unknown, fallback: string): string {
     case 0:
       return "No se pudo conectar. Comprueba tu conexión e inténtalo de nuevo.";
     case 401:
-      return "Tu sesión ha caducado. Vuelve a iniciar sesión; tus cambios locales se conservan.";
+      return SESSION_EXPIRED_MESSAGE;
     case 403:
       return "La cuenta cambió o no tienes permiso. Recarga la página antes de reintentar.";
     case 400:

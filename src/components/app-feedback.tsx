@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { GooeyToaster, gooeyToast } from "goey-toast";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "./language-provider";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/feedback";
 
 export default function AppToaster() {
   return (
@@ -96,6 +98,7 @@ export function ErrorToast({
   message?: string;
   onRetry?: () => void;
 }) {
+  const router = useRouter();
   const { t, language } = useLanguage();
   const retry = useRef(onRetry);
   const translate = useRef(t);
@@ -105,22 +108,34 @@ export function ErrorToast({
   }, [onRetry, t]);
   useEffect(() => {
     if (!message) return;
-    gooeyToast.error(translate.current("No se pudo completar la acción"), {
-      id,
-      description: translate.current(message),
-      duration: 12000,
-      action: retry.current
-        ? {
-            label: translate.current("Reintentar"),
-            onClick: () => retry.current?.(),
-          }
-        : undefined,
-      fillColor: "#18181b",
-      borderColor: "#52525b",
-    });
+    const expired = message === SESSION_EXPIRED_MESSAGE;
+    gooeyToast.error(
+      translate.current(
+        expired ? "Iniciar sesión" : "No se pudo completar la acción",
+      ),
+      {
+        id: expired ? "session-expired" : id,
+        description: translate.current(message),
+        duration: 12000,
+        action: expired
+          ? {
+              label: translate.current("Iniciar sesión"),
+              onClick: () => router.push("/login"),
+            }
+          : retry.current
+            ? {
+                label: translate.current("Reintentar"),
+                onClick: () => retry.current?.(),
+              }
+            : undefined,
+        fillColor: "#18181b",
+        borderColor: "#52525b",
+      },
+    );
+    if (expired) return;
     return () => {
       gooeyToast.dismiss(id);
     };
-  }, [id, message, language]);
+  }, [id, message, language, router]);
   return null;
 }
