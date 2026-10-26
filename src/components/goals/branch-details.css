@@ -288,16 +288,40 @@
   border: 1px solid #27272a;
   border-radius: 5px;
 }
-.branch-subtasks li > button {
+.branch-subtasks li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.branch-subtasks .branch-subtask-toggle {
   display: flex;
   align-items: center;
   gap: 9px;
   min-height: 30px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   cursor: pointer;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.branch-subtask-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  min-height: 32px;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+.branch-subtask-action:hover,
+.branch-subtask-action:focus-visible {
+  color: #fff;
+}
+.branch-subtasks .branch-inline-form {
+  width: 100%;
 }
 .branch-add-task,
 .branch-inline-form button {

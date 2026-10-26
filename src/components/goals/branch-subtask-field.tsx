@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ActivityStatus } from "./goal-diagram";
 import type { GoalActivity, GoalActivityChanges } from "@/lib/goal-activities";
 import { useLanguage } from "@/components/language-provider";
@@ -19,6 +20,7 @@ export default function BranchSubtaskField({
   setError: (error: string) => void;
 }) {
   const { t, language } = useLanguage();
+  const [editingTask, setEditingTask] = useState<string | null>(null);
   const children = activity.subtasks ?? [];
   const completed = children.filter(
     (child) => child.status === "completed",
@@ -46,32 +48,107 @@ export default function BranchSubtaskField({
         <ul className="branch-subtasks">
           {children.map((child) => (
             <li key={child.id} data-task-id={child.id}>
-              <TooltipButton
-                type="button"
-                aria-label={
-                  language === "en"
-                    ? `Mark ${child.name} as ${child.status === "completed" ? "pending" : "completed"}`
-                    : `Marcar ${child.name} como ${child.status === "completed" ? "pendiente" : "completada"}`
-                }
-                onClick={() =>
-                  update((current) => ({
-                    subtasks: current.subtasks?.map((task) =>
-                      task.id === child.id
-                        ? {
-                            ...task,
-                            status:
-                              task.status === "completed"
-                                ? "pending"
-                                : "completed",
-                          }
-                        : task,
-                    ),
-                  }))
-                }
-              >
-                <ActivityStatus status={child.status} />
-                <span>{child.name}</span>
-              </TooltipButton>
+              {editingTask === child.id ? (
+                <ValidatedForm
+                  className="branch-inline-form branch-compact-form"
+                  aria-label={`${t("Editar subtarea")}: ${child.name}`}
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const input = event.currentTarget.elements.namedItem(
+                      "name",
+                    ) as HTMLInputElement;
+                    const name = input.value.trim();
+                    if (
+                      update((current) => ({
+                        subtasks: current.subtasks?.map((task) =>
+                          task.id === child.id ? { ...task, name } : task,
+                        ),
+                      }))
+                    )
+                      setEditingTask(null);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Escape") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setEditingTask(null);
+                  }}
+                >
+                  <input
+                    name="name"
+                    aria-label={t("Nombre de la subtarea")}
+                    defaultValue={child.name}
+                    required
+                    pattern={".*\\S.*"}
+                    maxLength={100}
+                    autoFocus
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                  <button type="submit" aria-label={t("Guardar subtarea")}>
+                    <i aria-hidden="true" className="bi bi-check-lg" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t("Cancelar")}
+                    onClick={() => setEditingTask(null)}
+                  >
+                    <i aria-hidden="true" className="bi bi-x-lg" />
+                  </button>
+                </ValidatedForm>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="branch-subtask-toggle"
+                    aria-pressed={child.status === "completed"}
+                    aria-label={
+                      language === "en"
+                        ? `Mark ${child.name} as ${child.status === "completed" ? "pending" : "completed"}`
+                        : `Marcar ${child.name} como ${child.status === "completed" ? "pendiente" : "completada"}`
+                    }
+                    onClick={() =>
+                      update((current) => ({
+                        subtasks: current.subtasks?.map((task) =>
+                          task.id === child.id
+                            ? {
+                                ...task,
+                                status:
+                                  task.status === "completed"
+                                    ? "pending"
+                                    : "completed",
+                              }
+                            : task,
+                        ),
+                      }))
+                    }
+                  >
+                    <ActivityStatus status={child.status} />
+                    <span>{child.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="branch-subtask-action"
+                    aria-label={`${t("Editar subtarea")}: ${child.name}`}
+                    onClick={() => setEditingTask(child.id)}
+                  >
+                    <i aria-hidden="true" className="bi bi-pencil" />
+                  </button>
+                  <button
+                    type="button"
+                    className="branch-subtask-action"
+                    aria-label={`${t("Eliminar subtarea")}: ${child.name}`}
+                    onClick={() =>
+                      update((current) => ({
+                        subtasks: current.subtasks?.filter(
+                          (task) => task.id !== child.id,
+                        ),
+                      }))
+                    }
+                  >
+                    <i aria-hidden="true" className="bi bi-trash" />
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>

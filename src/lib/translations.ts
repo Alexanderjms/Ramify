@@ -232,6 +232,8 @@ export const english: Record<string, string> = {
   "Progreso de las subtareas": "Subtask progress",
   "Esta meta todavía no tiene subtareas.": "This goal has no subtasks yet.",
   "Añadir subtarea": "Add subtask",
+  "Editar subtarea": "Edit subtask",
+  "Eliminar subtarea": "Delete subtask",
   "Nombre de la subtarea": "Subtask name",
   "Guardar subtarea": "Save subtask",
   "Escribe el nombre de la subtarea.": "Enter the subtask name.",
