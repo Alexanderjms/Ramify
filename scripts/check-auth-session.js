@@ -62,6 +62,7 @@ const ts = require("typescript");
     },
     "next-auth/providers/github": GitHub,
     "@/lib/db": {
+      reportDatabaseError() {},
       getDatabase() {
         throw new Error("Real database must not be used");
       },

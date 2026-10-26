@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import {
   deleteGoalRecord,
   parseGoalFields,
@@ -51,7 +51,8 @@ async function mutate(
     if (deleting) await deleteGoalRecord(getDatabase(), session.user.id, id);
     else await saveGoal(getDatabase(), session.user.id, id, fields);
     return new Response(null, { status: 204 });
-  } catch {
+  } catch (error) {
+    reportDatabaseError(deleting ? "delete-goal" : "save-goal", error);
     return Response.json({ error: "Could not save goal" }, { status: 500 });
   }
 }

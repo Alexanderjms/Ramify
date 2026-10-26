@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import { listGoals } from "@/lib/goal-database";
 
 export async function GET(request: Request) {
@@ -13,7 +13,8 @@ export async function GET(request: Request) {
     return Response.json(await listGoals(getDatabase(), session.user.id), {
       headers: { "Cache-Control": "private, no-store" },
     });
-  } catch {
+  } catch (error) {
+    reportDatabaseError("load-goals", error);
     return Response.json({ error: "Could not load goals" }, { status: 500 });
   }
 }

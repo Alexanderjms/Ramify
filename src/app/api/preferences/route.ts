@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import {
   loadUserPreferences,
   saveUserPreferences,
@@ -21,7 +21,8 @@ export async function GET(request: Request) {
         headers: { "Cache-Control": "private, no-store" },
       },
     );
-  } catch {
+  } catch (error) {
+    reportDatabaseError("load-preferences", error);
     return Response.json(
       { error: "Could not load preferences" },
       { status: 500 },
@@ -57,7 +58,8 @@ export async function PATCH(request: Request) {
       await loadUserPreferences(getDatabase(), session.user.id),
       { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
+  } catch (error) {
+    reportDatabaseError("save-preferences", error);
     return Response.json(
       { error: "Could not save preferences" },
       { status: 500 },

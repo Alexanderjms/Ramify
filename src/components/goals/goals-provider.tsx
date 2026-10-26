@@ -30,6 +30,7 @@ import { goalsStorageKey, parseGoals } from "@/lib/goal-storage";
 import NewGoalModal from "./new-goal-modal";
 import { ErrorToast } from "@/components/app-feedback";
 import { InputError, errorMessage, responseError } from "@/lib/feedback";
+import { retryRequest } from "@/components/query-provider";
 
 type ActivityUpdate =
   GoalActivity[] | ((current: GoalActivity[]) => GoalActivity[]);
@@ -225,7 +226,7 @@ export default function GoalsProvider({
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    retry: false,
+    retry: retryRequest,
   });
   const {
     data: remoteSnapshot,
@@ -257,13 +258,13 @@ export default function GoalsProvider({
     mutationFn: ({ id, changes }: { id: string; changes: GoalFields }) =>
       persistGoal(userId, id, changes),
     networkMode: "always",
-    retry: false,
+    retry: retryRequest,
   });
   const { mutateAsync: deleteRemoteGoal } = useMutation({
     mutationKey: ["goals", userId, "delete"],
     mutationFn: (id: string) => persistGoal(userId, id),
     networkMode: "always",
-    retry: false,
+    retry: retryRequest,
   });
   const { mutateAsync: saveActivitiesRemote } = useMutation({
     mutationKey: ["goals", userId, "activities"],
@@ -308,7 +309,7 @@ export default function GoalsProvider({
       return (await response.json()) as { version: number };
     },
     networkMode: "always",
-    retry: false,
+    retry: retryRequest,
   });
 
   useEffect(() => {

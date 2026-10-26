@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import { ActivityError, saveActivities } from "@/lib/activity-database";
 import { validGoalId } from "@/lib/goal-view";
 import { readRequestBody, RequestBodyError } from "@/lib/request-body";
@@ -43,6 +43,8 @@ export async function PUT(
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    if (!(error instanceof ActivityError || error instanceof RequestBodyError))
+      reportDatabaseError("save-activities", error);
     return Response.json(
       { error: "Could not save diagram" },
       {

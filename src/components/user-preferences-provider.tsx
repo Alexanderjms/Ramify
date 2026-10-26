@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AccountLanguageBridge } from "./language-provider";
 import { ErrorToast } from "./app-feedback";
 import { errorMessage } from "@/lib/feedback";
+import { retryRequest } from "./query-provider";
 import DashboardLoadingSkeleton from "./dashboard/loading-skeleton";
 import {
   defaultUserPreferences,
@@ -119,7 +120,7 @@ export default function UserPreferencesProvider({
         loaded: true,
       });
     },
-    retry: false,
+    retry: retryRequest,
   });
   const { mutateAsync } = savePreferences;
 

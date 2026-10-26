@@ -92,6 +92,44 @@ const provider = AuthSessionProvider({
 assert.equal(provider.type, SessionProvider);
 assert.equal(provider.props.refetchInterval, 300);
 assert.equal(provider.props.refetchWhenOffline, false);
+const { retryRequest } = load("components/query-provider.tsx");
+for (const status of [0, 500, 502, 503, 504]) {
+  assert.equal(retryRequest(0, { status }), true);
+  assert.equal(retryRequest(1, { status }), true);
+  assert.equal(retryRequest(2, { status }), false);
+}
+for (const status of [400, 401, 403, 404, 409, 413, 429]) {
+  assert.equal(
+    retryRequest(0, { status }),
+    false,
+    `Do not replay HTTP ${status}`,
+  );
+}
+assert.equal(retryRequest(0, new TypeError("Failed to fetch")), true);
+assert.equal(retryRequest(0, new feedback.InputError("Invalid input")), false);
+assert.equal(retryRequest(0, new SyntaxError("Invalid response")), false);
+assert.equal(
+  retryRequest(0, new DOMException("Cancelled", "AbortError")),
+  false,
+);
+const { reportDatabaseError } = load("lib/db.ts");
+const logs = [];
+const originalError = console.error;
+try {
+  console.error = (...args) => logs.push(args);
+  reportDatabaseError(
+    "load-goals",
+    Object.assign(new Error("private SQL and token"), {
+      code: "SQLITE_BUSY",
+      rawCode: 5,
+    }),
+  );
+} finally {
+  console.error = originalError;
+}
+assert.deepEqual(logs, [
+  ["[ramify:database]", "load-goals", { code: "SQLITE_BUSY", rawCode: 5 }],
+]);
 console.log(
-  "OK: session renewal, shared expiry warning, sign-in recovery and normal error retry.",
+  "OK: session renewal; sign-in recovery; bounded transient retries; no 4xx replay; private database diagnostics.",
 );

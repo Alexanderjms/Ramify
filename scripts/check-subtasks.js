@@ -297,9 +297,147 @@ const { migrate } = require("./db-migrate.cjs");
       "Reduced motion must fade without sliding",
     );
     assert.equal(reducedExit.at(-1).display, "none");
+
+    // Wait for a real idle poll, without focus events or user actions.
+    const goalsUrl = `${origin}/api/goals`;
+    let remainingFailures = 2;
+    let requests = 0;
+    const failGoals = async (route) => {
+      requests++;
+      if (remainingFailures-- > 0)
+        await route.fulfill({
+          status: 503,
+          json: { error: "Temporary outage" },
+        });
+      else await route.continue();
+    };
+    await page.route(goalsUrl, failGoals);
+    await page.evaluate(() => {
+      window.sawServerError = false;
+      window.errorObserver = new MutationObserver(() => {
+        if (
+          document.body.textContent.includes(
+            "El servidor no pudo completar la acción.",
+          )
+        )
+          window.sawServerError = true;
+      });
+      window.errorObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    });
+    await expect.poll(() => requests, { timeout: 25_000 }).toBe(3);
+    await delay(300);
+    assert.equal(
+      await page.evaluate(() => window.sawServerError),
+      false,
+      "A recovered idle poll must not show an error toast",
+    );
+    assert.ok(
+      (await context.cookies()).some(
+        (cookie) => cookie.name === "authjs.session-token",
+      ),
+    );
+
+    // Persistent failures must remain visible after the bounded retries.
+    remainingFailures = 100;
+    requests = 0;
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    const serverNotice = page
+      .locator(".gooey-description")
+      .filter({ hasText: "El servidor no pudo completar la acción." });
+    await expect(serverNotice).toBeVisible({ timeout: 10_000 });
+    assert.equal(requests, 3);
+    await page.unroute(goalsUrl, failGoals);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(serverNotice).toHaveCount(0);
+    await page.evaluate(() => window.errorObserver.disconnect());
+
+    // Replays must keep diagram saves idempotent, including their revision.
+    let saveAttempts = 0;
+    const activitiesUrl = `${origin}/api/goals/test/activities`;
+    const failSaves = async (route) => {
+      if (++saveAttempts < 3)
+        await route.fulfill({
+          status: 503,
+          json: { error: "Temporary outage" },
+        });
+      else await route.continue();
+    };
+    await page.route(activitiesUrl, failSaves);
+    await branchButton.click();
+    await panel.locator(".branch-subtask-toggle").click();
+    await expect
+      .poll(async () => (await remote()).subtasks[0]?.status, {
+        timeout: 10_000,
+      })
+      .toBe("completed");
+    assert.equal(saveAttempts, 3);
+    assert.equal((await remote()).subtasks.length, 1);
+    await page.unroute(activitiesUrl, failSaves);
+    await page.waitForFunction(
+      () =>
+        !JSON.parse(localStorage.getItem("ramify:goals:subtasks-test"))[0]
+          .syncPending,
+    );
+    const beforeReplay = (await (await context.request.get(goalsUrl)).json())[0]
+      .activitiesVersion;
+    let replayAttempts = 0;
+    let committedStatus;
+    const loseResponse = async (route) => {
+      if (++replayAttempts === 1) {
+        committedStatus = (await route.fetch()).status();
+        await route.fulfill({
+          status: 502,
+          json: { error: "Response lost after commit" },
+        });
+      } else await route.continue();
+    };
+    await page.route(activitiesUrl, loseResponse);
+    await panel.locator(".branch-subtask-toggle").click();
+    await expect.poll(() => replayAttempts, { timeout: 10_000 }).toBe(2);
+    await page.waitForFunction(
+      () =>
+        !JSON.parse(localStorage.getItem("ramify:goals:subtasks-test"))[0]
+          .syncPending,
+    );
+    assert.equal(committedStatus, 200);
+    const replayed = (await (await context.request.get(goalsUrl)).json())[0];
+    assert.equal(
+      replayed.activitiesVersion,
+      beforeReplay + 1,
+      "A lost response must not apply the edit twice",
+    );
+    assert.equal(replayed.activities[0].subtasks[0].status, "pending");
+    await page.unroute(activitiesUrl, loseResponse);
+    await panel
+      .getByRole("button", { name: "Cerrar detalles de la meta", exact: true })
+      .click();
+
+    let viewAttempts = 0;
+    const viewUrl = `${origin}/api/goals/test/view`;
+    const failView = async (route) => {
+      if (route.request().method() === "PUT" && ++viewAttempts < 3)
+        await route.fulfill({
+          status: 503,
+          json: { error: "Temporary outage" },
+        });
+      else await route.continue();
+    };
+    await page.route(viewUrl, failView);
+    await page.getByRole("button", { name: "Acercar", exact: true }).click();
+    await expect
+      .poll(
+        async () => (await (await context.request.get(viewUrl)).json()).zoom,
+        { timeout: 10_000 },
+      )
+      .toBe(1.1);
+    assert.equal(viewAttempts, 3);
+    await page.unroute(viewUrl, failView);
     assert.deepEqual(errors, []);
     console.log(
-      "OK: subtasks persist; desktop/mobile drawer exits retain content; outside click; quick reopen; Escape; reduced motion.",
+      "OK: subtasks and drawer motion; idle polling recovers without false alerts; persistent failures visible; diagram/view saves retry safely.",
     );
   } finally {
     await browser?.close();

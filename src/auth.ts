@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { TursoAdapter } from "@/lib/auth-adapter";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 
 const adapter = TursoAdapter(getDatabase);
 
@@ -30,7 +30,13 @@ export async function auth() {
 
   // Keep database failures outside Auth.js: JWT callback errors delete the cookie.
   // Still validate the user on every protected request; an outage must fail closed.
-  const stored = await adapter.getUser!(session.user.id);
+  let stored;
+  try {
+    stored = await adapter.getUser!(session.user.id);
+  } catch (error) {
+    reportDatabaseError("authenticate-user", error);
+    throw error;
+  }
   if (!stored) return null;
   session.user.name = stored.name;
   session.user.email = stored.email;

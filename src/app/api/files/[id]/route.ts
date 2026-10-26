@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import {
   beginFile,
   completeFile,
@@ -89,6 +89,8 @@ async function handle(request: Request, params: Promise<{ id: string }>) {
     }
     return new Response(null, { status: 204 });
   } catch (error) {
+    if (!(error instanceof FileError || error instanceof RequestBodyError))
+      reportDatabaseError("file-operation", error);
     return Response.json(
       { error: "File operation failed" },
       {

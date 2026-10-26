@@ -12,7 +12,7 @@ import {
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { goalViewQueryKey } from "@/components/query-provider";
+import { goalViewQueryKey, retryRequest } from "@/components/query-provider";
 import { parseGoalView, type GoalView } from "@/lib/goal-view";
 import { responseError } from "@/lib/feedback";
 
@@ -97,7 +97,7 @@ export default function useGoalView(id: string, initialView: GoalView) {
     },
     initialData: initialView,
     staleTime: 30_000,
-    retry: false,
+    retry: retryRequest,
     enabled: Boolean(userId),
   });
   const queryView = viewQuery.data ?? initialView;
@@ -162,7 +162,7 @@ export default function useGoalView(id: string, initialView: GoalView) {
   const saveMutation = useMutation({
     mutationKey,
     scope: { id: JSON.stringify(mutationKey) },
-    retry: false,
+    retry: retryRequest,
     mutationFn: async (input: {
       body: string;
       userId: string;

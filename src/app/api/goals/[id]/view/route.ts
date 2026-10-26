@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { getDatabase } from "@/lib/db";
+import { getDatabase, reportDatabaseError } from "@/lib/db";
 import {
   loadGoalView,
   parseGoalView,
@@ -30,7 +30,8 @@ export async function GET(
   if (!validGoalId(id)) return json({ error: "Invalid goal" }, 400);
   try {
     return json(await loadGoalView(getDatabase(), session.user.id, id));
-  } catch {
+  } catch (error) {
+    reportDatabaseError("load-goal-view", error);
     return json({ error: "Could not load view" }, 500);
   }
 }
@@ -71,7 +72,8 @@ export async function PUT(
   try {
     await saveGoalView(getDatabase(), session.user.id, id, view);
     return new Response(null, { status: 204, headers: privateNoStore });
-  } catch {
+  } catch (error) {
+    reportDatabaseError("save-goal-view", error);
     return json({ error: "Could not save view" }, 500);
   }
 }

@@ -23,6 +23,15 @@ function getHttpStatus(error: unknown): number | undefined {
   }
 }
 
+export function retryRequest(failureCount: number, error: unknown) {
+  const status = getHttpStatus(error);
+  return (
+    (status === undefined
+      ? error instanceof TypeError
+      : status === 0 || status >= 500) && failureCount < 2
+  );
+}
+
 export default function QueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -32,13 +41,7 @@ export default function QueryProvider({ children }: { children: ReactNode }) {
             staleTime: 60_000,
             gcTime: 5 * 60_000,
             refetchOnWindowFocus: false,
-            retry: (failureCount, error) => {
-              const status = getHttpStatus(error);
-              return (
-                (status === undefined || status < 400 || status >= 500) &&
-                failureCount < 2
-              );
-            },
+            retry: retryRequest,
           },
         },
       }),
