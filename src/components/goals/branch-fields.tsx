@@ -165,7 +165,12 @@ export default function BranchFields({
     event: KeyboardEvent<HTMLTextAreaElement>,
     field: BranchTextFieldName,
   ) {
-    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    if (
+      event.key !== "Enter" ||
+      event.nativeEvent.isComposing ||
+      event.shiftKey
+    )
+      return;
     event.preventDefault();
     if (update({ [field]: event.currentTarget.value })) {
       setEditing(null);
